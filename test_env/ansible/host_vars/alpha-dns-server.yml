@@ -1,0 +1,69 @@
+# ansible/host_vars/alpha-dns-server.yml
+---
+rhbase_firewall_allow_services:
+  - dns
+  - prometheus-node-exporter
+rhbase_firewall_allow_ports:
+  - 9119/tcp # BIND exporter for Prometheus (monitoring)
+bind_acls:
+  - name: acl1
+    match_list:
+      - 172.26.0.0/24
+bind_allow_query: ["any"]
+bind_listen_ipv4: ["any"]
+bind_dnssec_enable: false
+bind_dnssec_validation: false
+bind_forward_only: true
+bind_forwarders:
+  - 10.0.2.3
+  - 1.1.1.1
+bind_recursion: true
+# bind_allow_transfer: # For secondary DNS
+#   - 172.16.128.2
+bind_zones:
+  - name: alpha.lan
+    type: primary
+    primaries:
+      - "{{ hostvars['alpha-dns-server']['ansible_host'] }}"
+    name_servers:
+      - alpha-dns-server.alpha.lan.
+      # - srv002.alpha.lan. # For secondary DNS
+    allow_update:
+      - "{{ hostvars['alpha-dns-server']['ansible_host'] }}"
+      # - 172.16.128.2 # For secondary DNS
+    # also_notify:
+      # - 172.16.128.2 # For secondary DNS
+    hosts:
+      # - name: r001
+      #   ip: 172.16.255.254
+      #   aliases:
+      #     - gw
+      - name: alpha-dns-server
+        ip: "{{ hostvars['alpha-dns-server']['ansible_host'] }}"
+        aliases:
+          - ns
+          - ns1
+      # - name: srv002
+      #   ip: 172.16.128.2
+      #   aliases:
+      #     - ns2
+      # - name: srv003
+      #   ip: 172.16.128.3
+      #   aliases:
+      #     - dhcp
+      - name: alpha-monitoring-server
+        ip: "{{ hostvars['alpha-monitoring-server']['ansible_host'] }}"
+        aliases:
+          - mon
+      - name: alpha-web-server
+        ip: "{{ hostvars['alpha-web-server']['ansible_host'] }}"
+        aliases:
+          - web
+      - name: control
+        ip: '{{ control_node_ip }}'
+      - name: "@" # Enables "http://mydomain.com/"
+        ip: "{{ hostvars['alpha-web-server']['ansible_host'] }}"
+        aliases:
+          - www
+    networks:
+      - "172.16"

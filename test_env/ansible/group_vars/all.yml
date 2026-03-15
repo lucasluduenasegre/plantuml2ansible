@@ -1,0 +1,20 @@
+# ansible/group_vars/all.yml
+---
+control_node_ip: 172.26.0.2
+rhbase_users:
+  - name: lucas
+    comment: 'Lucas Ludueña-Segre'
+    groups:
+      - wheel
+    ssh_key: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDA1+Fs0OhsYuHjQFrFwLRY70/xJ7ndkj5Fz5FGyDNGugORSRxjH3yc8nRxbiOweyrMUYyaHG9t2cmvwvqf2zmTPXMpPogmjz2rjpBnR+dAFA4ZUTJix3DzjkQHVQD/1ZIU10MEKja11QCmsSpYdYzX17R4XpWddkXuGf+6cr9hmd77rvYDXkmjlsaUdD5ry39inivU6yWR6WaBJqjuoLnzfrjKMSmU1PVaOgb7xBELHlBrdifg+z9n/0VERa077XMb/+a77/jGxv2VWVDBihDjJ/SEDl++/kRjNpxjJEfeDRpaqu5PlzPcwmxdiR86lzGqNdK/7u88/+0Le3xJcLTK8bnPNS/S/BupJheZHPgpHgRqaTtRS9X6z9asx3jHus3oALTmp3FlqNx448ZSElOGvT9ANosXOvbRwMGB7gZ3TQpDEFp06XYReeQaSn4qjs4lt6GufgJt/8wz08gdBtX21/SWvxLbX1AjAW8Cr3AvMhGJaJqNnSidPl/smU0oXi4gf9jMCzJmnqh5z6l4MsHKxh8qi1DvcSxHLYizSZLqYzlcZnQW072Gl3Rm6TvNVaD6R7NDY4Pu79De2iqxjasNPP+WkIysYz2IKtkp2O6PkMPOkk/R/9zysZ7J5fOoL5R8dR8c8IMcFdD1J4gILwPJ5Vlv4Br/2rQoMjCtILRF9w== lucas@Findux'
+rhbase_repositories:
+  - epel-release
+rhbase_install_packages:
+  - bash-completion
+  - bind-utils
+  - git
+  - nano
+  - setroubleshoot-server
+  - tree
+  - vim-enhanced
+  - wget

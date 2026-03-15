@@ -1,0 +1,21 @@
+# ansible/roles/dns_role/tasks/main.yml
+---
+- name: Replace the search domain in /etc/resolv.conf
+  ansible.builtin.lineinfile:
+    path: /etc/resolv.conf
+    regexp: '^search\s+.*'
+    line: "search alpha.lan"
+    state: present
+- name: Remove existing (and conflicting) DNS servers in /etc/resolv.conf
+  ansible.builtin.lineinfile:
+    path: /etc/resolv.conf
+    regexp: '^nameserver\s+.*'
+    state: absent
+- name: Add DNS server(s) in /etc/resolv.conf
+  ansible.builtin.lineinfile:
+    path: /etc/resolv.conf
+    line: "{{ item }}"
+    state: present
+  loop:
+    - "nameserver {{ hostvars['alpha-dns-server']['ansible_host'] }}"
+    # - "nameserver <secondary_dns>"

@@ -1,0 +1,88 @@
+# ansible/site.yml
+---
+- name: General prerequisites
+  hosts: all
+  gather_facts: yes
+  roles: [bertvv.rh-base]
+
+- name: Configure alpha-dns-server
+  hosts: alpha-dns-server
+  become: true
+  roles:
+    - bertvv.rh-base
+    - bertvv.bind
+    - role_set_dns
+    - prometheus.prometheus.node_exporter
+    - prometheus.prometheus.bind_exporter
+
+- name: Configure alpha-monitoring-server
+  hosts: alpha-monitoring-server
+  become: true
+  # pre_tasks:
+  #   - name: Replace the search domain in /etc/resolv.conf
+  #     ansible.builtin.lineinfile:
+  #       path: /etc/resolv.conf
+  #       regexp: '^search\s+.*'
+  #       line: "search alpha.lan"
+  #       state: present
+  #   - name: Remove the VirtualBox DNS server in /etc/resolv.conf
+  #     ansible.builtin.lineinfile:
+  #       path: /etc/resolv.conf
+  #       regexp: "nameserver 10.0.2.3"
+  #       state: absent
+  #   - name: Replace or add DNS servers in /etc/resolv.conf
+  #     ansible.builtin.lineinfile:
+  #       path: /etc/resolv.conf
+  #       line: "{{ item }}"
+  #       state: present
+  #     loop:
+  #       - "nameserver '{{ hostvars[alpha-dns-server][ansible_host] }}'"
+  #       # - "nameserver 172.16.128.2"
+  roles:
+    - bertvv.rh-base
+    - role_set_dns
+    - prometheus.prometheus.prometheus
+    - grafana.grafana.grafana
+
+- name: Configure alpha-web-server
+  hosts: alpha-web-server
+  become: true
+  roles:
+    - bertvv.rh-base
+    - role_set_dns
+    - bertvv.httpd
+    - prometheus.prometheus.node_exporter
+    # - prometheus.prometheus.mysqld_exporter
+  # tasks:
+    # - name: Copy the database creation script (db.sql) to the server
+    #   ansible.builtin.copy:
+    #     src: /vagrant/ansible/files/db.sql
+    #     dest: /tmp/
+    #   register: result
+    # - name: Install the PHP script test.php
+    #   ansible.builtin.copy:
+    #     src: /vagrant/ansible/files/test.php
+    #     dest: /var/www/html/index.php
+    # - name: Create the database
+    #   community.mysql.mysql_db:
+    #     state: import
+    #     name: "{{db_name}}"
+    #     target: /tmp/db.sql
+    #     login_unix_socket: /var/lib/mysql/mysql.sock
+    #   when: result is changed
+    # - name: Create a database user
+    #   community.mysql.mysql_user:
+    #     state: present
+    #     name: "{{db_user}}"
+    #     password: "{{db_password}}"
+    #     priv: "{{db_name}}.*:ALL"
+    #     login_unix_socket: /var/lib/mysql/mysql.sock
+    #   when: result is changed
+    # - name: Create a database user for mysqld_exporter
+    #   community.mysql.mysql_user:
+    #     state: present
+    #     name: "exporter"
+    #     password: "secret"
+    #     priv: "*.*:PROCESS,REPLICATION CLIENT,SELECT"
+    #     login_unix_socket: /var/lib/mysql/mysql.sock
+    #   when: result is changed
