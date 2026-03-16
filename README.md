@@ -16,7 +16,7 @@ Since this is a proof-of-concept, there are a number of noteworthy limitations t
 
 - The environment is deployed locally with Vagrant. The to be generated Ansible-code (which will be used to configure this environment) will therefore be shaped according to this backend.
 - The virtual machines in this environment will use the AlmaLinux 9 operating system. The reason for this, is because the Ansible roles developed by Bert Van Vreckem were developed for a now deprecated version of Ansible, which is not provided by AlmaLinux 10. Much of the functionality provided by these roles is limited or even hindered when ran on AlmaLinux 10. This choice has obvious security implications for this environment, yet it is one of the compromises that had to be made for this proof-of-concept.
-- The hosts in this environment are located under the local (class B) IPv4 network 172.26.0.0 with subnet mask 255.255.0.0 or a prefix length of 16 bits (only IPv4 will be supported). Multiple networks/subnets are supported, as long as they fall within this overarching network. One can assume that the entire environment can be accessed by the Ansible control node (with IP address 172.26.0.2/16).
+- The hosts in this environment are located under the local (class B) IPv4 network 172.26.0.0/16 (only IPv4 will be supported). Multiple networks/subnets are supported, as long as they fall within this overarching network. One can assume that the entire environment can be accessed by the Ansible control node (with IP address 172.26.0.2/16).
 
 <!--TODO-->
 
