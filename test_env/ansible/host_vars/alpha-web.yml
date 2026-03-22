@@ -1,0 +1,35 @@
+# ansible/host_vars/srv100.yml
+---
+rhbase_repositories:
+  - epel-release
+rhbase_install_packages:
+  - bash-completion
+  - bind-utils
+  - git
+  - httpd
+  - mariadb-server
+  - nano
+  - php-fpm
+  - php-mysqlnd
+  - python3-PyMySQL
+  - setroubleshoot-server
+  - tree
+  - vim-enhanced
+  - wget
+rhbase_firewall_allow_services:
+  - http
+  - https
+  - prometheus-node-exporter
+rhbase_firewall_allow_ports:
+  - 9104/tcp
+rhbase_start_services:
+  - httpd
+  - mariadb
+rhbase_selinux_booleans:
+  - httpd_can_network_connect
+
+httpd_ssl_certificate_key_file: "ca.key"
+httpd_ssl_certificate_file: "ca.crt"
+db_user: "appuser"
+db_name: "appdb"
+db_password: "let me in"

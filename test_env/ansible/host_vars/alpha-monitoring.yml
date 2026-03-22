@@ -10,6 +10,7 @@ prometheus_scrape_configs:
     metrics_path: "/metrics"
     static_configs:
       - targets:
+          - "localhost:9100"
           - "ns1.alpha.lan:9100"
           # - "172.16.128.1:9100"
           # - "ns2.alpha.lan:9100"
@@ -24,11 +25,11 @@ prometheus_scrape_configs:
       - targets:
           - "ns1.alpha.lan:9119"
           # - "ns2.alpha.lan:9119"
-  # - job_name: "mysqld_exporter"
-  #   metrics_path: "/metrics"
-  #   static_configs:
-  #     - targets:
-  #         - "www.alpha.lan:9104"
+  - job_name: "mysqld_exporter"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+          - "www.alpha.lan:9104"
 
 grafana_security:
   admin_user: admin
@@ -42,8 +43,14 @@ grafana_datasources:
     basicAuth: false
     
 grafana_dashboards:
-  - dashboard_id: 1860
+  - dashboard_id: 1860 # Node Exporter Full
     revision_id: 42
+    datasource: prometheus
+  - dashboard_id: 14057 # MySQL Exporter Quickstart and Dashboard
+    revision_id: 1
+    datasource: prometheus
+  - dashboard_id: 12309 # Bind9 Exporter DNS
+    revision_id: 5
     datasource: prometheus
 
 grafana_alerting: {}

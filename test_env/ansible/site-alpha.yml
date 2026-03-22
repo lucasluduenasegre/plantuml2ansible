@@ -1,0 +1,90 @@
+# ansible/site.yml
+---
+- name: General prerequisites
+  hosts: all
+  become: true
+  gather_facts: yes
+  roles: [bertvv.rh-base]
+
+- name: Configure alpha-dns
+  hosts: alpha-dns
+  become: true
+  roles:
+    - bertvv.bind
+    - prometheus.prometheus.bind_exporter
+
+- name: Set  DNS server(s) for every host
+  hosts: all
+  become: true
+  roles: [role_set_dns]
+
+- name: Configure alpha-monitoring
+  hosts: alpha-monitoring
+  become: true
+  roles:
+    - prometheus.prometheus.prometheus
+    - grafana.grafana.grafana
+
+- name: Set up Node Exporter for every host
+  hosts: all
+  become: true
+  roles: [prometheus.prometheus.node_exporter]
+
+- name: Configure alpha-web
+  hosts: alpha-web
+  become: true
+  # pre_tasks:
+  #   - name: Create mysqld_exporter cert dir
+  #     ansible.builtin.file:
+  #       path: "/etc/mysqld_exporter"
+  #       state: directory
+  #       owner: root
+  #       group: root
+  #   - name: Create cert and key
+  #     community.crypto.x509_certificate:
+  #       path: /etc/mysqld_exporter/tls.cert
+  #       csr_path: /etc/mysqld_exporter/tls.csr
+  #       privatekey_path: /etc/mysqld_exporter/tls.key
+  #       provider: selfsigned
+  roles:
+    - bertvv.httpd
+    - prometheus.prometheus.mysqld_exporter
+  # vars:
+  #   mysqld_exporter_tls_server_config:
+  #     cert_file: /etc/mysqld_exporter/tls.cert
+  #     key_file: /etc/mysqld_exporter/tls.key
+  #   mysqld_exporter_basic_auth_users:
+  #     randomuser: examplepassword
+  tasks:
+    - name: Copy the database creation script (db.sql) to the server
+      ansible.builtin.copy:
+        src: /vagrant/ansible/files/db.sql
+        dest: /tmp/
+      register: result
+    - name: Install the PHP script test.php
+      ansible.builtin.copy:
+        src: /vagrant/ansible/files/test.php
+        dest: /var/www/html/index.php
+    - name: Create the database
+      community.mysql.mysql_db:
+        state: import
+        name: "{{db_name}}"
+        target: /tmp/db.sql
+        login_unix_socket: /var/lib/mysql/mysql.sock
+      when: result is changed
+    - name: Create a database user
+      community.mysql.mysql_user:
+        state: present
+        name: "{{db_user}}"
+        password: "{{db_password}}"
+        priv: "{{db_name}}.*:ALL"
+        login_unix_socket: /var/lib/mysql/mysql.sock
+      when: result is changed
+    - name: Create a database user for mysqld_exporter
+      community.mysql.mysql_user:
+        state: present
+        name: "exporter"
+        password: "secret"
+        priv: "*.*:PROCESS,REPLICATION CLIENT,SELECT"
+        login_unix_socket: /var/lib/mysql/mysql.sock
+      when: result is changed

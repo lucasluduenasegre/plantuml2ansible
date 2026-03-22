@@ -65,8 +65,8 @@ sudo --login --non-interactive --user=vagrant -- bash -c "ansible-galaxy install
 
 # log "Running \"router-config.yml\"-playbook"
 
-# sudo --login --non-interactive --user=vagrant -- bash -c "ansible-playbook -i /vagrant/ansible/inventory_alpha.yml /vagrant/ansible/router-config.yml"
+# sudo --login --non-interactive --user=vagrant -- bash -c "ansible-playbook -i /vagrant/ansible/inventory-alpha.yml /vagrant/ansible/router-config.yml"
 
-log "Running \"site_alpha.yml\"-playbook"
+log "Running \"site-alpha.yml\"-playbook"
 
-sudo --login --non-interactive --user=vagrant -- bash -c "ansible-playbook -i /vagrant/ansible/inventory_alpha.yml /vagrant/ansible/site_alpha.yml"
+sudo --login --non-interactive --user=vagrant -- bash -c "ansible-playbook -i /vagrant/ansible/inventory-alpha.yml /vagrant/ansible/site-alpha.yml" -vvvv

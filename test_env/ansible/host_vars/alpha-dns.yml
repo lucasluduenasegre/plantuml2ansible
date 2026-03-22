@@ -1,4 +1,4 @@
-# ansible/host_vars/alpha-dns-server.yml
+# ansible/host_vars/alpha-dns.yml
 ---
 rhbase_firewall_allow_services:
   - dns
@@ -24,12 +24,12 @@ bind_zones:
   - name: alpha.lan
     type: primary
     primaries:
-      - "{{ hostvars['alpha-dns-server']['ansible_host'] }}"
+      - "{{ hostvars['alpha-dns']['ansible_host'] }}"
     name_servers:
-      - alpha-dns-server.alpha.lan.
+      - alpha-dns.alpha.lan.
       # - srv002.alpha.lan. # For secondary DNS
     allow_update:
-      - "{{ hostvars['alpha-dns-server']['ansible_host'] }}"
+      - "{{ hostvars['alpha-dns']['ansible_host'] }}"
       # - 172.16.128.2 # For secondary DNS
     # also_notify:
       # - 172.16.128.2 # For secondary DNS
@@ -38,8 +38,8 @@ bind_zones:
       #   ip: 172.16.255.254
       #   aliases:
       #     - gw
-      - name: alpha-dns-server
-        ip: "{{ hostvars['alpha-dns-server']['ansible_host'] }}"
+      - name: alpha-dns
+        ip: "{{ hostvars['alpha-dns']['ansible_host'] }}"
         aliases:
           - ns
           - ns1
@@ -51,18 +51,18 @@ bind_zones:
       #   ip: 172.16.128.3
       #   aliases:
       #     - dhcp
-      - name: alpha-monitoring-server
-        ip: "{{ hostvars['alpha-monitoring-server']['ansible_host'] }}"
+      - name: alpha-monitoring
+        ip: "{{ hostvars['alpha-monitoring']['ansible_host'] }}"
         aliases:
           - mon
-      - name: alpha-web-server
-        ip: "{{ hostvars['alpha-web-server']['ansible_host'] }}"
+      - name: alpha-web
+        ip: "{{ hostvars['alpha-web']['ansible_host'] }}"
         aliases:
           - web
       - name: control
         ip: '{{ control_node_ip }}'
       - name: "@" # Enables "http://mydomain.com/"
-        ip: "{{ hostvars['alpha-web-server']['ansible_host'] }}"
+        ip: "{{ hostvars['alpha-web']['ansible_host'] }}"
         aliases:
           - www
     networks:

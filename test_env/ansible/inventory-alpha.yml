@@ -3,7 +3,7 @@
 all:
   children:
     # <network_name>
-    network_alpha:
+    network-alpha:
       # Required vars for local testing with Vagrant
       vars:
         ansible_user: vagrant
@@ -11,14 +11,14 @@ all:
         ansible_become: true
       hosts:
         # <hostname>
-        alpha-web-server:
+        alpha-web:
           # <ipv4_address>
           ansible_host: 172.26.0.10
-        alpha-dns-server:
+        alpha-dns:
           ansible_host: 172.26.0.20
-        alpha-monitoring-server:
+        alpha-monitoring:
           ansible_host: 172.26.0.30
-    # network_beta:
+    # network-beta:
     #   vars:
     #     ansible_user: vagrant
     #     ansible_ssh_password: vagrant

@@ -17,5 +17,5 @@
     line: "{{ item }}"
     state: present
   loop:
-    - "nameserver {{ hostvars['alpha-dns-server']['ansible_host'] }}"
+    - "nameserver {{ hostvars['alpha-dns']['ansible_host'] }}"
     # - "nameserver <secondary_dns>"

@@ -1,9 +1,9 @@
 @startnwdiag test_env
-// @endnwdiag <optional_diagram_name> --> Start of network diagram
+// @startnwdiag <optional_diagram_name> --> Start of network diagram
   // (Local) network specification
   //
   // Format: network <network_name> { ... }
-  network network_alpha {
+  network network-alpha {
     // Optional subnet specification
     address = 172.26.0.0/24
 
@@ -12,16 +12,16 @@
     // Format: <hostname> [address = <ipv4_address>]
     //
     //
-    alpha_web_server [address = 172.26.0.10];
-    alpha_dns_server [address = 172.26.0.20];
-    alpha_monitoring_server [address = 172.26.0.30];
+    alpha-web [address = 172.26.0.10];
+    alpha-dns [address = 172.26.0.20];
+    alpha-monitoring [address = 172.26.0.30];
   }
 
-  network network_beta {
+  network network-beta {
     address = 172.26.10.0/24
 
-    beta_workstation_1 [address = 172.26.10.10];
-    beta_workstation_2 [address = 172.26.10.20];
+    beta-workstation-1 [address = 172.26.10.10];
+    beta-workstation-2 [address = 172.26.10.20];
   }
 // @endnwdiag --> End of network diagram
 @endnwdiag

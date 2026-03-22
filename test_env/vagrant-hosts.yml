@@ -11,15 +11,15 @@
 #   ssh_username: "vyos"
 #   ssh_password: "vyos"
 
-- name: alpha-web-server
+- name: alpha-web
   ip: 172.26.0.10
   netmask: 255.255.255.0
 
-- name: alpha-dns-server
+- name: alpha-dns
   ip: 172.26.0.20
   netmask: 255.255.255.0
 
-- name: alpha-monitoring-server
+- name: alpha-monitoring
   ip: 172.26.0.30
   netmask: 255.255.255.0
 
