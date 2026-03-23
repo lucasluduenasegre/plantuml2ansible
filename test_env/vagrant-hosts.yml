@@ -5,7 +5,7 @@
 # <https://github.com/bertvv/ansible-skeleton>
 ---
 # - name: test-env-router
-#   iop: 172.26.0.1
+#   ip: 172.26.0.1
 #   netmask: 255.255.0.0
 #   box: vyos/current
 #   ssh_username: "vyos"
@@ -32,6 +32,7 @@
 #   box: bento/fedora-28
 #   memory: 2048
 #   cpus: 2
+#   ip: 172.20.0.10
 #   netmask: 255.255.0.0
 #   mac: '13:37:de:ad:be:ef'
 #   playbook: srv002.yml

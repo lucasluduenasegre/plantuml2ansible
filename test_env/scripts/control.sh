@@ -50,8 +50,8 @@ dnf install -y \
 log "Adding Ansible hosts to ~/.ssh/known_hosts"
 
 sudo --login --non-interactive --user=vagrant -- bash << 'EOF'
-grep -oP "ip:\s*\K\S+" /vagrant/vagrant-hosts.yml | sort -u | while read -r ip; do
-  ssh-keyscan -H "$ip" >> ~/.ssh/known_hosts 2>/dev/null
+grep -oP "^\s*ip:\s*\K\S+" /vagrant/vagrant-hosts.yml | sort -u | while read -r ip; do
+  ssh-keyscan -H "${ip}" >> ~/.ssh/known_hosts 2>/dev/null
 done
 EOF
 
@@ -69,4 +69,4 @@ sudo --login --non-interactive --user=vagrant -- bash -c "ansible-galaxy install
 
 log "Running \"site-alpha.yml\"-playbook"
 
-sudo --login --non-interactive --user=vagrant -- bash -c "ansible-playbook -i /vagrant/ansible/inventory-alpha.yml /vagrant/ansible/site-alpha.yml" -vvvv
+sudo --login --non-interactive --user=vagrant -- bash -c "ansible-playbook -i /vagrant/ansible/inventory-alpha.yml /vagrant/ansible/site-alpha.yml -vvvv"
