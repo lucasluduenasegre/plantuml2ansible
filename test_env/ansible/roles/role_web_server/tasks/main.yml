@@ -1,0 +1,42 @@
+# ansible/roles/role_web_server/tasks/main.yml
+---
+- name: Include bertvv.httpd
+  ansible.builtin.include_role:
+    name: bertvv.httpd
+
+- name: Copy the database creation script (db.sql) to the server
+  ansible.builtin.copy:
+    src: /vagrant/ansible/files/db.sql
+    dest: /tmp/
+  register: result
+
+- name: Install the PHP script test.php
+  ansible.builtin.copy:
+    src: /vagrant/ansible/files/test.php
+    dest: /var/www/html/index.php
+
+- name: Create the database
+  community.mysql.mysql_db:
+    state: import
+    name: "{{db_name}}"
+    target: /tmp/db.sql
+    login_unix_socket: /var/lib/mysql/mysql.sock
+  when: result is changed
+
+- name: Create a database user
+  community.mysql.mysql_user:
+    state: present
+    name: "{{db_user}}"
+    password: "{{db_password}}"
+    priv: "{{db_name}}.*:ALL"
+    login_unix_socket: /var/lib/mysql/mysql.sock
+  when: result is changed
+
+- name: Create a database user for mysqld_exporter
+  community.mysql.mysql_user:
+    state: present
+    name: "exporter"
+    password: "secret"
+    priv: "*.*:PROCESS,REPLICATION CLIENT,SELECT"
+    login_unix_socket: /var/lib/mysql/mysql.sock
+  when: result is changed

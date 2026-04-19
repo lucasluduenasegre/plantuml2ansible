@@ -1,0 +1,27 @@
+@startnwdiag test_env
+' Specify diagram name above
+
+' (Local) network specification
+'
+' Format: network <network_name> { ... }
+network network-alpha {
+  ' Subnet specification
+  '
+  ' Format: address = <network-address>/<prefix-length>
+  address = 172.26.0.0/24
+
+  ' Host(s) specification
+  '
+  ' Format: <hostname> [address = <ipv4_address>]
+  alpha_web [label = alpha-web, address = 172.26.0.10, cpus = 1, memory = 512]
+  alpha_dns [label = alpha-dns, address = 172.26.0.20, cpus = 1, memory = 512]
+  alpha_mon [label = alpha-monitoring, address = 172.26.0.30, cpus = 2, memory = 2048]
+}
+
+' network network-beta {
+  ' address = 172.26.10.0/24
+
+  ' beta-workstation [address = 172.26.10.10]
+'}
+
+@endnwdiag

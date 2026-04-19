@@ -2,6 +2,7 @@
 ---
 rhbase_repositories:
   - epel-release
+
 rhbase_install_packages:
   - bash-completion
   - bind-utils
@@ -16,20 +17,40 @@ rhbase_install_packages:
   - tree
   - vim-enhanced
   - wget
+
 rhbase_firewall_allow_services:
   - http
   - https
   - prometheus-node-exporter
+
 rhbase_firewall_allow_ports:
   - 9104/tcp
+
 rhbase_start_services:
   - httpd
   - mariadb
+
 rhbase_selinux_booleans:
   - httpd_can_network_connect
 
-httpd_ssl_certificate_key_file: "ca.key"
-httpd_ssl_certificate_file: "ca.crt"
 db_user: "appuser"
 db_name: "appdb"
 db_password: "let me in"
+
+mysqld_exporter_enabled_collectors:
+  - info_schema.processlist
+  - info_schema.innodb_metrics
+  - info_schema.tablestats
+  - info_schema.tables
+  - info_schema.userstats
+  - engine_innodb_status
+  - slave_status
+
+mysqld_exporter_port: "9104"
+mysqld_exporter_socket: "/var/lib/mysql/mysql.sock"
+mysqld_exporter_web_listen_address: "0.0.0.0:9104"
+
+httpd_ssl_certificate_key_file: "ca.key"
+httpd_ssl_certificate_file: "ca.crt"
+
+httpd_status_enable: true

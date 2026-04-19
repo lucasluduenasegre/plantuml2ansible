@@ -1,0 +1,29 @@
+@startuml nwdiag-test-env
+' Fix roles being reused over different nodes
+set separator /
+node "alpha-web" as alpha_web {
+    ' artifact "ca.cert"
+    ' artifact "ca.key"
+    ' artifact "db.sql"
+    ' artifact "test.php"
+    component "bertvv.rh-base"
+    component "role_dns_client"
+    component "role_web_server"
+    component "prometheus.prometheus.mysqld_exporter"
+}
+node "alpha-dns" as alpha-dns {
+    component "bertvv.rh-base"
+    component "role_dns_server" as ADNS
+    component "prometheus.prometheus.bind_exporter"
+}
+node "alpha-monitoring" as AMON {
+    component "bertvv.rh-base"
+    component "role_dns_client"
+    component "prometheus.prometheus.prometheus"
+    component "grafana.grafana.grafana"
+}
+
+ADNS -- AMON
+ADNS -- alpha_web
+
+@enduml

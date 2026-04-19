@@ -69,4 +69,4 @@ sudo --login --non-interactive --user=vagrant -- bash -c "ansible-galaxy install
 
 log "Running \"site-alpha.yml\"-playbook"
 
-sudo --login --non-interactive --user=vagrant -- bash -c "ansible-playbook -i /vagrant/ansible/inventory-alpha.yml /vagrant/ansible/site-alpha.yml -vvvv"
+sudo --login --non-interactive --user=vagrant -- bash -c "ansible-playbook -i /vagrant/ansible/inventory-alpha.yml /vagrant/ansible/site-alpha.yml"

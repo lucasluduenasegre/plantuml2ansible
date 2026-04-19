@@ -30,3 +30,19 @@ test/bats/
 
 # Node.js build directory
 node_modules/
+
+# Webserver secrets
+
+*/ansible/files/*.crt
+*/ansible/files/*.key
+
+# Python virtual environments
+venv/
+env/
+ENV/
+.env/
+.venv/
+
+# Converter output
+
+converter/output/

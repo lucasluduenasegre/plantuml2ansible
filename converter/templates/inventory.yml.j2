@@ -1,0 +1,16 @@
+# ansible/inventory.yml
+---
+all:
+  children:
+{% for net_name, net_data in networks.items() %}
+    {{ net_name }}:
+      vars:
+        ansible_user: vagrant
+        ansible_ssh_password: vagrant
+        ansible_become: true
+      hosts:
+{% for hostname, host_data in net_data.hosts.items() %}
+        {{ hostname }}:
+          ansible_host: {{ host_data.ip }}
+{% endfor %}
+{% endfor %}

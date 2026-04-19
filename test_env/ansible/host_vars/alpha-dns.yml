@@ -3,23 +3,43 @@
 rhbase_firewall_allow_services:
   - dns
   - prometheus-node-exporter
+
 rhbase_firewall_allow_ports:
   - 9119/tcp # BIND exporter for Prometheus (monitoring)
+
 bind_acls:
   - name: acl1
     match_list:
       - 172.26.0.0/24
+
 bind_allow_query: ["any"]
+
 bind_listen_ipv4: ["any"]
+
 bind_dnssec_enable: false
+
 bind_dnssec_validation: false
+
 bind_forward_only: true
+
 bind_forwarders:
   - 10.0.2.3
   - 1.1.1.1
+
 bind_recursion: true
+
 # bind_allow_transfer: # For secondary DNS
 #   - 172.16.128.2
+
+bind_statistics_channels: true
+
+# bind_statistics_allow:
+#   - '127.0.0.1'
+
+# bind_statistics_host: 127.0.0.1
+
+# bind_statistics_port: 8053
+
 bind_zones:
   - name: alpha.lan
     type: primary
@@ -32,7 +52,7 @@ bind_zones:
       - "{{ hostvars['alpha-dns']['ansible_host'] }}"
       # - 172.16.128.2 # For secondary DNS
     # also_notify:
-      # - 172.16.128.2 # For secondary DNS
+    # - 172.16.128.2 # For secondary DNS
     hosts:
       # - name: r001
       #   ip: 172.16.255.254
@@ -60,7 +80,7 @@ bind_zones:
         aliases:
           - web
       - name: control
-        ip: '{{ control_node_ip }}'
+        ip: "{{ control_node_ip }}"
       - name: "@" # Enables "http://mydomain.com/"
         ip: "{{ hostvars['alpha-web']['ansible_host'] }}"
         aliases:

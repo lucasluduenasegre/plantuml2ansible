@@ -10,13 +10,13 @@
   hosts: alpha-dns
   become: true
   roles:
-    - bertvv.bind
+    - role_dns_server
     - prometheus.prometheus.bind_exporter
 
 - name: Set  DNS server(s) for every host
-  hosts: all
+  hosts: all:!alpha-dns
   become: true
-  roles: [role_set_dns]
+  roles: [role_dns_client]
 
 - name: Configure alpha-monitoring
   hosts: alpha-monitoring
@@ -47,7 +47,7 @@
   #       privatekey_path: /etc/mysqld_exporter/tls.key
   #       provider: selfsigned
   roles:
-    - bertvv.httpd
+    - role_web_server
     - prometheus.prometheus.mysqld_exporter
   # vars:
   #   mysqld_exporter_tls_server_config:
@@ -55,36 +55,3 @@
   #     key_file: /etc/mysqld_exporter/tls.key
   #   mysqld_exporter_basic_auth_users:
   #     randomuser: examplepassword
-  tasks:
-    - name: Copy the database creation script (db.sql) to the server
-      ansible.builtin.copy:
-        src: /vagrant/ansible/files/db.sql
-        dest: /tmp/
-      register: result
-    - name: Install the PHP script test.php
-      ansible.builtin.copy:
-        src: /vagrant/ansible/files/test.php
-        dest: /var/www/html/index.php
-    - name: Create the database
-      community.mysql.mysql_db:
-        state: import
-        name: "{{db_name}}"
-        target: /tmp/db.sql
-        login_unix_socket: /var/lib/mysql/mysql.sock
-      when: result is changed
-    - name: Create a database user
-      community.mysql.mysql_user:
-        state: present
-        name: "{{db_user}}"
-        password: "{{db_password}}"
-        priv: "{{db_name}}.*:ALL"
-        login_unix_socket: /var/lib/mysql/mysql.sock
-      when: result is changed
-    - name: Create a database user for mysqld_exporter
-      community.mysql.mysql_user:
-        state: present
-        name: "exporter"
-        password: "secret"
-        priv: "*.*:PROCESS,REPLICATION CLIENT,SELECT"
-        login_unix_socket: /var/lib/mysql/mysql.sock
-      when: result is changed

@@ -14,18 +14,26 @@
 - name: alpha-web
   ip: 172.26.0.10
   netmask: 255.255.255.0
+  memory: 512
+  cpus: 1
 
 - name: alpha-dns
   ip: 172.26.0.20
   netmask: 255.255.255.0
+  memory: 512
+  cpus: 1
 
 - name: alpha-monitoring
   ip: 172.26.0.30
   netmask: 255.255.255.0
+  memory: 2048
+  cpus: 2
 
 - name: control
   ip: 172.26.0.2
   netmask: 255.255.0.0
+  memory: 512
+  cpus: 1
 
 # Example of a more elaborate host definition
 # - name: srv002
