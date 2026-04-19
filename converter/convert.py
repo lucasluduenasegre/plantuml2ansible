@@ -158,20 +158,24 @@ def convert(puml_path):
         # Fall back to the filename if @startnwdiag has no name
         diagram_name = os.path.splitext(os.path.basename(puml_path))[0]
         print(
-            f"Warning: no diagram name found in file, using '{diagram_name}' from filename."
+            warn(
+                f"Warning: no diagram name found in file, using '{diagram_name}' from filename."
+            )
         )
 
-    output_dir = os.path.join("output", diagram_name)
-    os.makedirs(output_dir, exist_ok=True)
+    # Create required directories in output folder
+    output_env_path = os.path.join("output", diagram_name)
+    output_env_ansible_path = os.path.join(output_env_path, "ansible")
+    paths = [output_env_path, output_env_ansible_path]
+    for path in paths:
+        os.makedirs(path, exist_ok=True)
 
+    # Load templates
     env = Environment(
         loader=FileSystemLoader("templates/"), trim_blocks=True, lstrip_blocks=True
     )
 
-    output_dir = os.path.join("output", diagram_name)
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Then use output_dir in your open() calls:
+    # Then use output_env_path in your open() calls:
 
     # Render Ansible inventory
     try:
@@ -182,9 +186,11 @@ def convert(puml_path):
             file=sys.stderr,
         )
         sys.exit(1)
-    with open(os.path.join(output_dir, "inventory.yml"), "w") as f:
+    with open(os.path.join(output_env_path, "inventory.yml"), "w") as f:
         f.write(inventory.render(networks=networks))
-    print(f'Generated Ansible inventory "{os.path.join(output_dir, "inventory.yml")}"')
+    print(
+        f'Generated Ansible inventory "{os.path.join(output_env_ansible_path, "inventory.yml")}"'
+    )
 
     # Render Vagrant hosts
     try:
@@ -195,9 +201,11 @@ def convert(puml_path):
             file=sys.stderr,
         )
         sys.exit(1)
-    with open(os.path.join(output_dir, "vagrant-hosts.yml"), "w") as f:
-        f.write(vagrant.render(diagram_name=diagram_name, networks=networks))
-    print(f'Generated Vagrant hosts file "output/{diagram_name}/vagrant-hosts.yml"')
+    with open(os.path.join(output_env_ansible_path, "vagrant-hosts.yml"), "w") as f:
+        f.write(vagrant.render(networks=networks))
+    print(
+        f'Generated Vagrant hosts file "{os.path.join(output_env_path, "vagrant-hosts.yml")}"'
+    )
 
 
 # endregion

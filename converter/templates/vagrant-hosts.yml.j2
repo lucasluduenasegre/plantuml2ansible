@@ -1,6 +1,5 @@
 # vagrant_hosts.yml
 ---
-
 {% for net_name, net_data in networks.items() %}
 {% for hostname, host_data in net_data.hosts.items() %}
 - name: {{ hostname }}
@@ -12,7 +11,7 @@
 {% endfor %}
 {% endfor %}
 - name: control
-  ip: 172.26.0.2
+  ip: 172.26.255.253
   netmask: 255.255.0.0
   cpus: 1
   memory: 512

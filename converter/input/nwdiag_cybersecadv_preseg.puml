@@ -1,0 +1,28 @@
+@startnwdiag cybersecadv-preseg
+network internal-company-lan {
+    address = "172.30.0.0/16";
+
+    companyrouter [address = "172.30.255.254"];
+    dns [address = "172.30.0.4"];
+    web [address = "172.30.0.10"];
+    database [address = "172.30.0.15"];
+    employee [address = "172.30.0.123"];
+}
+
+network fake-internet {
+    address = "192.168.62.0/24";
+
+    companyrouter [address = "192.168.62.253"];
+    isprouter [address = "192.168.62.254"];
+    red [address = "192.168.62.66"];
+    your-laptop [address = "dhcp"];
+    homerouter [address = "192.168.62.42"];
+}
+
+network employee-home-lan {
+    address = "172.10.10.0/24";
+
+    homerouter [address = "172.10.10.254"];
+    remote-employee [address = "172.10.10.123"];
+}
+@endnwdiag

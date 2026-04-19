@@ -30,7 +30,7 @@
   cpus: 2
 
 - name: control
-  ip: 172.26.0.2
+  ip: 172.26.255.253
   netmask: 255.255.0.0
   memory: 512
   cpus: 1
