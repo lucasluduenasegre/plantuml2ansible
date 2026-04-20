@@ -2,6 +2,11 @@
 ---
 control_node_ip: 172.26.0.2
 
+# Required vars for local testing with Vagrant
+ansible_user: vagrant
+ansible_ssh_password: vagrant
+ansible_become: true
+
 # region bertvv.rhbase
 rhbase_repositories:
   - epel-release

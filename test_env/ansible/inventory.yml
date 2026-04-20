@@ -1,11 +1,6 @@
 # ansible/inventory.yml
 ---
 all:
-  # Required vars for local testing with Vagrant
-  vars:
-    ansible_user: vagrant
-    ansible_ssh_password: vagrant
-    ansible_become: true
   children:
     # <network_name>:
     #   hosts:

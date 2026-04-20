@@ -28,7 +28,7 @@
   memory: 2048
 
 - name: control
-  ip: 172.26.255.253
+  ip: 172.26.0.2
   netmask: 255.255.0.0
   cpus: 1
   memory: 512

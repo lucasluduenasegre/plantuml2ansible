@@ -50,7 +50,7 @@ dnf install -y \
 log "Adding Ansible hosts to ~/.ssh/known_hosts"
 
 sudo --login --non-interactive --user=vagrant -- bash << 'EOF'
-grep -oP "^\s*ip:\s*\K\S+" /vagrant/vagrant-hosts.yml | sort -u | while read -r ip; do
+grep -oP "^\s*(?:- )?ip:\s*\K\S+" /vagrant/vagrant-hosts.yml | sort -u | while read -r ip; do
   ssh-keyscan -H "${ip}" >> ~/.ssh/known_hosts 2>/dev/null
 done
 EOF
