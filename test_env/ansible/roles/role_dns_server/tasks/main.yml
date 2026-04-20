@@ -1,35 +1,17 @@
 # ansible/roles/role_dns_server/tasks/main.yml
 ---
+- name: Include bertvv.bind
+  ansible.builtin.include_role:
+    name: bertvv.bind
+
 - name: Add TCP port 8053 to SELinux dns_port_t
   community.general.seport:
     ports: 8053
     proto: tcp
     setype: dns_port_t
     state: present
-  become: yes
+  become: true
 
-- name: Include bertvv.bind
+- name: Include role_dns_client
   ansible.builtin.include_role:
-    name: bertvv.bind
-
-- name: Replace the search domain in /etc/resolv.conf
-  ansible.builtin.lineinfile:
-    path: /etc/resolv.conf
-    regexp: '^search\s+.*'
-    line: "search alpha.lan"
-    state: present
-
-- name: Remove existing (and conflicting) DNS servers in /etc/resolv.conf
-  ansible.builtin.lineinfile:
-    path: /etc/resolv.conf
-    regexp: '^nameserver\s+.*'
-    state: absent
-
-- name: Add DNS server(s) in /etc/resolv.conf
-  ansible.builtin.lineinfile:
-    path: /etc/resolv.conf
-    line: "{{ item }}"
-    state: present
-  loop:
-    - "nameserver {{ hostvars['alpha-dns']['ansible_host'] }}"
-    # - "nameserver <secondary_dns>"
+    name: role_dns_client

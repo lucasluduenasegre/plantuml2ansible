@@ -1,17 +1,51 @@
 # vagrant_hosts.yml
 ---
-{% for net_name, net_data in networks.items() %}
-{% for hostname, host_data in net_data.hosts.items() %}
+{% for hostname, host_data in all_hosts.items() %}
+{% if host_data.ips | length == 1 %}
 - name: {{ hostname }}
-  ip: {{ host_data.ip }}
-  netmask: {{ net_data.netmask }}
+  ip: {{ host_data.ips[0] }}
+  netmask: {{ host_data.netmasks[0] }}
   cpus: {{ host_data.cpus }}
   memory: {{ host_data.memory }}
-
+{% else %}
+- name: {{ hostname }}
+  cpus: {{ host_data.cpus }}
+  memory: {{ host_data.memory }}
+  networks:
+{% for ip, netmask in host_data.ips | zip(host_data.netmasks) %}
+    - ip: {{ ip }}
+      netmask: {{ netmask }}
 {% endfor %}
+{% endif %}
+
 {% endfor %}
 - name: control
   ip: 172.26.255.253
   netmask: 255.255.0.0
   cpus: 1
   memory: 512
+
+# Examples
+
+# Host with a single IP address
+
+# - name: <hostname>
+#   cpus: <amt_cores>
+#   memory: <amt_gb_ram>
+#   ip: <ipv4_address>
+#   netmask: <netmask> # (*)
+
+# Host with multipe IP addresses (max. 3) (**)
+
+# - name: <hostname>
+#   cpus: <amt_cores>
+#   memory: <amt_gb_ram>
+#   networks:
+#     - ip: <ipv4_address>
+#       netmask: <netmask>
+#     ...
+
+# Notes:
+# - (*) <netmask> is derived from the network the host is defined under
+# - (**) The limit for three IP addresses is only enforced as soon as `vagrant up` is called.
+#   At that point, only the first three defined IP addresses will be assigned to an interface.

@@ -1,61 +1,59 @@
 # vagrant_hosts.yml
-#
-# List of hosts to be created by Vagrant. For more information about the
-# possible settings, see the documentation at
-# <https://github.com/bertvv/ansible-skeleton>
 ---
-# - name: test-env-router
-#   ip: 172.26.0.1
-#   netmask: 255.255.0.0
-#   box: vyos/current
-#   ssh_username: "vyos"
-#   ssh_password: "vyos"
+- name: central-router
+  cpus: 1
+  memory: 512
+  networks:
+    - ip: 172.26.0.254
+      netmask: 255.255.255.0
+    - ip: 172.26.10.254
+      netmask: 255.255.255.0
 
 - name: alpha-web
   ip: 172.26.0.10
   netmask: 255.255.255.0
-  memory: 512
   cpus: 1
+  memory: 512
 
 - name: alpha-dns
   ip: 172.26.0.20
   netmask: 255.255.255.0
-  memory: 512
   cpus: 1
+  memory: 512
 
 - name: alpha-monitoring
   ip: 172.26.0.30
   netmask: 255.255.255.0
-  memory: 2048
   cpus: 2
+  memory: 2048
 
 - name: control
   ip: 172.26.255.253
   netmask: 255.255.0.0
-  memory: 512
   cpus: 1
+  memory: 512
 
-# Example of a more elaborate host definition
-# - name: srv002
-#   box: bento/fedora-28
-#   memory: 2048
-#   cpus: 2
-#   ip: 172.20.0.10
-#   netmask: 255.255.0.0
-#   mac: '13:37:de:ad:be:ef'
-#   playbook: srv002.yml
-#   forwarded_ports:
-#     - host: 8080
-#       guest: 80
-#     - host: 8443
-#       guest: 443
-#   synced_folders:
-#     - src: test
-#       dest: /tmp/test
-#     - src: www
-#       dest: /var/www/html
-#       options:
-#         :create: true
-#         :owner: root
-#         :group: root
-#         :mount_options: ['dmode=0755', 'fmode=0644']
+# Examples
+
+# Host with a single IP address
+
+# - name: <hostname>
+#   cpus: <amt_cores>
+#   memory: <amt_gb_ram>
+#   ip: <ipv4_address>
+#   netmask: <netmask> # (*)
+
+# Host with multipe IP addresses (max. 3) (**)
+
+# - name: <hostname>
+#   cpus: <amt_cores>
+#   memory: <amt_gb_ram>
+#   networks:
+#     - ip: <ipv4_address>
+#       netmask: <netmask>
+#     ...
+
+# Notes:
+# - (*) <netmask> is derived from the network the host is defined under
+# - (**) The limit for three IP addresses is only enforced as soon as `vagrant up` is called.
+#   At that point, only the first three defined IP addresses will be assigned to an interface.

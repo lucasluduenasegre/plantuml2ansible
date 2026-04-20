@@ -1,12 +1,15 @@
 # ansible/host_vars/alpha-dns.yml
 ---
+# region bertvv.rhbase
 rhbase_firewall_allow_services:
   - dns
   - prometheus-node-exporter
 
 rhbase_firewall_allow_ports:
   - 9119/tcp # BIND exporter for Prometheus (monitoring)
+# endregion
 
+# region bertvv.bind
 bind_acls:
   - name: acl1
     match_list:
@@ -87,3 +90,4 @@ bind_zones:
           - www
     networks:
       - "172.16"
+# endregion

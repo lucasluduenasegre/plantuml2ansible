@@ -1,16 +1,22 @@
 # ansible/inventory.yml
 ---
 all:
+  # Required vars for local testing with Vagrant
+  vars:
+    ansible_user: vagrant
+    ansible_ssh_password: vagrant
+    ansible_become: true
   children:
+    # <network_name>:
+    #   hosts:
+    #     <hostname>:
+    #       ansible_host: <ipv4_address>
+    #     ...
 {% for net_name, net_data in networks.items() %}
     {{ net_name }}:
-      vars:
-        ansible_user: vagrant
-        ansible_ssh_password: vagrant
-        ansible_become: true
       hosts:
 {% for hostname, host_data in net_data.hosts.items() %}
         {{ hostname }}:
-          ansible_host: {{ host_data.ip }}
+          ansible_host: {{ host_data.ips[0] }}
 {% endfor %}
 {% endfor %}

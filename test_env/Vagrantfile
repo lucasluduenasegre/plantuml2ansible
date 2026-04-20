@@ -19,6 +19,10 @@ DEFAULT_BASE_BOX = 'bento/almalinux-9'
 # Directory containing VM provisioning scripts
 PROVISIONING_SCRIPT_DIR = 'scripts/'
 
+# Maximum number of additional network interfaces VirtualBox supports
+# (adapter 1 is always NAT, so 3 remain for other networks)
+MAX_NETWORK_INTERFACES = 3
+
 #
 # No changes needed below this point
 #
@@ -32,27 +36,30 @@ hosts = YAML.load_file(File.join(__dir__, vagrant_hosts))
 
 # {{{ Helper functions
 
-# Set options for the network interface configuration. All values are
-# optional, and can include:
+# Set options for the network interface configuration.
+# Accepts either a host hash (single-IP format) or an interface hash
+# from the 'networks' list (multi-interface format).
+#
+# All values are optional, and can include:
 # - ip (default = DHCP)
 # - netmask (default value = 255.255.255.0
 # - mac
 # - auto_config (if false, Vagrant will not configure this network interface
 # - intnet (if true, an internal network adapter will be created instead of a
 #   host-only adapter)
-def network_options(host)
+def network_options(iface)
   options = {}
 
-  if host.key?('ip')
-    options[:ip] = host['ip']
-    options[:netmask] = host['netmask'] ||= '255.255.0.0'
+  if iface.key?('ip')
+    options[:ip] = iface['ip']
+    options[:netmask] = iface['netmask'] ||= '255.255.255.0'
   else
     options[:type] = 'dhcp'
   end
 
-  options[:mac] = host['mac'].gsub(/[-:]/, '') if host.key?('mac')
-  options[:auto_config] = host['auto_config'] if host.key?('auto_config')
-  options[:virtualbox__intnet] = true if host.key?('intnet') && host['intnet']
+  options[:mac] = iface['mac'].gsub(/[-:]/, '') if iface.key?('mac')
+  options[:auto_config] = iface['auto_config'] if iface.key?('auto_config')
+  options[:virtualbox__intnet] = true if iface.key?('intnet') && iface['intnet']
   options
 end
 
@@ -81,6 +88,42 @@ def forwarded_ports(vm, host)
   end
 end
 
+# Configure network interfaces for a VM.
+#
+# Supports two formats in vagrant-hosts.yml:
+#
+# Single interface:
+#   - name: myhost
+#     ip: 192.168.0.10
+#     netmask: 255.255.255.0
+#
+# Multi-interface:
+#   - name: myrouter
+#     networks:
+#       - ip: 192.168.0.1
+#         netmask: 255.255.255.0
+#       - ip: 192.168.1.1
+#         netmask: 255.255.255.0
+def configure_networks(vm, host)
+  if host.key?('networks')
+    interfaces = host['networks']
+
+    if interfaces.length > MAX_NETWORK_INTERFACES
+      puts "WARNING: host '#{host['name']}' defines #{interfaces.length} interfaces, " \
+           "but VirtualBox only supports #{MAX_NETWORK_INTERFACES}. " \
+           "Only the first #{MAX_NETWORK_INTERFACES} will be configured."
+      interfaces = interfaces.first(MAX_NETWORK_INTERFACES)
+    end
+
+    interfaces.each do |iface|
+      vm.network :private_network, **network_options(iface)
+    end
+  elsif host.key?('ip')
+    # Legacy single-interface format
+    vm.network :private_network, **network_options(host)
+  end
+end
+
 # }}}
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
@@ -90,12 +133,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       node.vm.box_url = host['box_url'] if host.key? 'box_url'
 
       node.vm.hostname = host['name']
-      node.vm.network :private_network, **network_options(host)
+      configure_networks(node.vm, host)
       custom_synced_folders(node.vm, host)
       forwarded_ports(node.vm, host)
       # Allow setting a custom SSH username and password
       node.ssh.username = host['ssh_username'] if host.key? 'ssh_username'
-      node.ssh.password = host['ssh_password'] if host.key? 'ssh_password'   
+      node.ssh.password = host['ssh_password'] if host.key? 'ssh_password'
 
       # VirtualBox-specific settings
       node.vm.provider :virtualbox do |vb|
@@ -111,7 +154,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       # VMware Desktop-specific settings
       node.vm.provider :vmware_desktop do |vmw|
         # vmw.gui = true
-      
+
         # Must be a multiple of 4MB
         vmw.vmx["memsize"] = host['memory'] if host.key? 'memory'
         vmw.vmx["numvcpus"] = host['cpus'] if host.key? 'cpus'

@@ -1,29 +1,38 @@
-@startuml nwdiag-test-env
+@startuml test_env
 ' Fix roles being reused over different nodes
+' This line makes sure that objects with the same name (nota)
 set separator /
-node "alpha-web" as alpha_web {
+
+
+' Format: node <identifier> <<<type>>> as <description>
+node central_router <<router>> as "central_router" {
+    component "router"
+}
+
+node alpha_dns as "alpha-dns" {
+    component "dns_server"
+    component "dns_client"
+    component "bind_exporter"
+}
+
+node alpha_monitoring as "alpha-monitoring" {
+    component "dns_client"
+    component "prometheus"
+    component "grafana"
+}
+
+node alpha_web as "alpha-web" {
     ' artifact "ca.cert"
     ' artifact "ca.key"
     ' artifact "db.sql"
     ' artifact "test.php"
-    component "bertvv.rh-base"
-    component "role_dns_client"
-    component "role_web_server"
-    component "prometheus.prometheus.mysqld_exporter"
-}
-node "alpha-dns" as alpha-dns {
-    component "bertvv.rh-base"
-    component "role_dns_server" as ADNS
-    component "prometheus.prometheus.bind_exporter"
-}
-node "alpha-monitoring" as AMON {
-    component "bertvv.rh-base"
-    component "role_dns_client"
-    component "prometheus.prometheus.prometheus"
-    component "grafana.grafana.grafana"
+    component "dns_client"
+    component "web_server"
+    component "mysqld_exporter"
 }
 
-ADNS -- AMON
-ADNS -- alpha_web
+dns_server -- alpha_monitoring
+dns_server -- alpha_web
+dns_server -- alpha_web
 
 @enduml

@@ -45,4 +45,4 @@ ENV/
 
 # Converter output
 
-converter/output/
+converter/output/*

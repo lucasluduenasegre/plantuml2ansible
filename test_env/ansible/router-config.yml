@@ -8,7 +8,7 @@
         config:
           - name: eth1
             ipv4:
-              - address: "{{ hostvars['test-env-router']['ansible_host'] }}"/16
+              - address: "{{ hostvars['test-env-router']['ansible_host'] }}/16"
     - name: Add a description to both interfaces
       vyos.vyos.vyos_interfaces:
         config:

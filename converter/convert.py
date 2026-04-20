@@ -40,32 +40,32 @@ def parse_nwdiag(puml_text):
     ENVIRONMENT_SUBNET = ipaddress.IPv4Network("172.26.0.0/16")
 
     for line_number, line in enumerate(puml_text.splitlines(), start=1):
+        # Ignore comments
         line = re.sub(r"//.*", "", line).strip()
 
         # Extract diagram name from @startnwdiag
-        start_match = re.match(r"@startnwdiag(?:\s+([\w-]+))?", line)
-        if start_match:
-            diagram_name = start_match.group(1)  # None if no name given
+        start_nwdiag_regex = re.match(r"@startnwdiag(?:\s+([\w-]+))?", line)
+        if start_nwdiag_regex:
+            diagram_name = start_nwdiag_regex.group(1) # If unset, falls back to filename in convert()
 
-        net_match = re.match(r"network\s+([\w-]+)\s*\{", line)
-        if net_match:
-            current_network = net_match.group(1)
+        network_regex = re.match(r"network\s+([\w-]+)\s*\{", line)
+        if network_regex:
+            current_network = network_regex.group(1)
             networks[current_network] = {"subnet": None, "netmask": None, "hosts": {}}
 
-        addr_match = re.match(r"address\s*=\s*([\d.]+/\d+)", line)
-        if addr_match and current_network:
+        network_address_regex = re.match(r"address\s*=\s*([\d.]+/\d+)", line)
+        if network_address_regex and current_network:
             try:
-                cidr = ipaddress.IPv4Network(addr_match.group(1), strict=False)
+                cidr = ipaddress.IPv4Network(network_address_regex.group(1), strict=False)
             except ValueError:
                 print(
                     err(
-                        f"Error on line {line_number}: invalid CIDR '{addr_match.group(1)}'."
+                        f"Error on line {line_number}: invalid CIDR '{network_address_regex.group(1)}'."
                     ),
                     file=sys.stderr,
                 )
                 sys.exit(1)
 
-            # ↓ Add this block
             if not cidr.subnet_of(ENVIRONMENT_SUBNET):
                 print(
                     err(
@@ -79,23 +79,24 @@ def parse_nwdiag(puml_text):
             networks[current_network]["subnet"] = str(cidr.network_address)
             networks[current_network]["netmask"] = str(cidr.netmask)
 
-        host_match = re.match(r"([\w-]+)\s*\[([^\]]+)\]", line)
-        if host_match and current_network:
-            identifier = host_match.group(1)
-            attrs = host_match.group(2)
+        host_regex = re.match(r"([\w-]+)\s*\[([^\]]+)\]", line)
+        if host_regex and current_network:
+            # Default identifier is the first word
+            identifier = host_regex.group(1)
+            attrs = host_regex.group(2)
 
-            label_match = re.search(r'label\s*=\s*"?([\w-]+)"?', attrs)
+            # Sets the hostname based on the description variable in the attributes, otherwise falls back on the previously defined identifier
+            host_description_regex = re.search(r'description\s*=\s*"?([\w-]+)"?', attrs)
             hostname = (
-                label_match.group(1) if label_match else identifier.replace("_", "-")
+                # Underscores will be converted to hyphens due to Unix conventions
+                host_description_regex.group(1) if host_description_regex else identifier.replace("_", "-")
             )
 
-            ip_match = re.search(r'address\s*=\s*"?([\d.]+)"?', attrs)
-            if ip_match:
-                raw_ip = ip_match.group(1)
+            host_address_regex = re.search(r'address\s*=\s*"?([\d.]+)"?', attrs)
+            if host_address_regex:
+                raw_ip = host_address_regex.group(1)
                 try:
                     ip = ipaddress.IPv4Address(raw_ip)
-                    networks[current_network]["hosts"][hostname] = str(ip)
-                    host_line_numbers[hostname] = line_number
                 except ValueError:
                     print(
                         err(
@@ -104,39 +105,83 @@ def parse_nwdiag(puml_text):
                         file=sys.stderr,
                     )
                     sys.exit(1)
-                cpus_match = re.search(r"cpus\s*=\s*(\d+)", attrs)
-                memory_match = re.search(r"memory\s*=\s*(\d+)", attrs)
 
-                networks[current_network]["hosts"][hostname] = {
-                    "ip": str(ip),
-                    "cpus": int(cpus_match.group(1)) if cpus_match else 1,
-                    "memory": int(memory_match.group(1)) if memory_match else 512,
-                }
+                host_cpus_regex = re.search(r"cpus\s*=\s*(\d+)", attrs)
+                host_memory_regex = re.search(r"memory\s*=\s*(\d+)", attrs)
+
+                # ↓ This block replaces the old single assignment
+                if hostname not in networks[current_network]["hosts"]:
+                    networks[current_network]["hosts"][hostname] = {
+                        "ips": [str(ip)],
+                        "networks": [
+                            current_network
+                        ],  # ← store network name, not netmask
+                        "cpus": int(host_cpus_regex.group(1)) if host_cpus_regex else 1,
+                        "memory": int(host_memory_regex.group(1)) if host_memory_regex else 512,
+                    }
+                else:
+                    networks[current_network]["hosts"][hostname]["ips"].append(str(ip))
+                    networks[current_network]["hosts"][hostname]["networks"].append(
+                        current_network
+                    )
+
+                host_line_numbers[hostname] = line_number
+
+    # Resolve netmasks now that all network address= lines have been parsed
+    for _, net_data in networks.items():
+        for hostname, host_data in net_data["hosts"].items():
+            host_data["netmasks"] = [
+                networks[net]["netmask"] for net in host_data["networks"]
+            ]
 
     # Second pass: validate all host IPs against their subnet
     # (handles cases where address = line appears after host definitions)
-    for net_name, net_data in networks.items():
+    for _, net_data in networks.items():
         subnet = net_data.get("subnet")
         netmask = net_data.get("netmask")
         if not subnet or not netmask:
             continue
         network_obj = ipaddress.IPv4Network(f"{subnet}/{netmask}")
         for hostname, host_data in net_data["hosts"].items():
-            if ipaddress.IPv4Address(host_data["ip"]) not in network_obj:
-                line_number = host_line_numbers.get(hostname, "unknown")
-                print(
-                    err(
-                        f"Error on line {line_number}: host '{hostname}' has IP {ip}, which is not within subnet {network_obj}."
-                    ),
-                    file=sys.stderr,
-                )
-                sys.exit(1)
+            for host_ip in host_data["ips"]:
+                if ipaddress.IPv4Address(host_ip) not in network_obj:
+                    line_number = host_line_numbers.get(hostname, "unknown")
+                    print(
+                        err(
+                            f"Error on line {line_number}: host '{hostname}' has IP {host_ip}, "
+                            f"which is not within subnet {network_obj}."
+                        ),
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
 
     return networks, diagram_name
 
 
 # endregion
 
+# region debug_print
+def debug_print(diagram_name, networks):
+    print(bold(f"\n=== Parsed diagram: '{diagram_name}' ===\n"))
+    for net_name, net_data in networks.items():
+        print(bold(f"  Network: {net_name}"))
+        print(f"    Subnet : {net_data['subnet']}/{net_data['netmask']}")
+        if net_data["hosts"]:
+            print("    Hosts  :")
+            for hostname, host_data in net_data["hosts"].items():
+                ips = ", ".join(
+                    f"{ip} ({nm})"
+                    for ip, nm in zip(host_data["ips"], host_data["netmasks"])
+                )
+                print(f"      - {hostname}")
+                print(f"          IPs     : {ips}")
+                print(f"          CPUs    : {host_data['cpus']}")
+                print(f"          Memory  : {host_data['memory']} MB")
+                print(f"          Networks: {', '.join(host_data['networks'])}")
+        else:
+            print("    Hosts  : (none)")
+        print()
+# endregion
 
 # region convert
 def convert(puml_path):
@@ -163,6 +208,8 @@ def convert(puml_path):
             )
         )
 
+    debug_print(diagram_name, networks)
+
     # Create required directories in output folder
     output_env_path = os.path.join("output", diagram_name)
     output_env_ansible_path = os.path.join(output_env_path, "ansible")
@@ -172,8 +219,11 @@ def convert(puml_path):
 
     # Load templates
     env = Environment(
-        loader=FileSystemLoader("templates/"), trim_blocks=True, lstrip_blocks=True
+        loader=FileSystemLoader("templates/"),
+        trim_blocks=True,
+        lstrip_blocks=True,
     )
+    env.filters["zip"] = zip
 
     # Then use output_env_path in your open() calls:
 
@@ -186,7 +236,7 @@ def convert(puml_path):
             file=sys.stderr,
         )
         sys.exit(1)
-    with open(os.path.join(output_env_path, "inventory.yml"), "w") as f:
+    with open(os.path.join(output_env_ansible_path, "inventory.yml"), "w") as f:
         f.write(inventory.render(networks=networks))
     print(
         f'Generated Ansible inventory "{os.path.join(output_env_ansible_path, "inventory.yml")}"'
@@ -201,8 +251,26 @@ def convert(puml_path):
             file=sys.stderr,
         )
         sys.exit(1)
-    with open(os.path.join(output_env_ansible_path, "vagrant-hosts.yml"), "w") as f:
-        f.write(vagrant.render(networks=networks))
+
+    all_hosts = {}
+    for net_data in networks.values():
+        for hostname, host_data in net_data["hosts"].items():
+            if hostname not in all_hosts:
+                all_hosts[hostname] = {
+                    "ips": list(host_data["ips"]),
+                    "netmasks": list(host_data["netmasks"]),
+                    "cpus": host_data["cpus"],
+                    "memory": host_data["memory"],
+                }
+            # Merge IPs and netmasks from subsequent network appearances
+            else:
+                for ip, netmask in zip(host_data["ips"], host_data["netmasks"]):
+                    if ip not in all_hosts[hostname]["ips"]:
+                        all_hosts[hostname]["ips"].append(ip)
+                        all_hosts[hostname]["netmasks"].append(netmask)
+
+    with open(os.path.join(output_env_path, "vagrant-hosts.yml"), "w") as f:
+        f.write(vagrant.render(networks=networks, all_hosts=all_hosts))
     print(
         f'Generated Vagrant hosts file "{os.path.join(output_env_path, "vagrant-hosts.yml")}"'
     )

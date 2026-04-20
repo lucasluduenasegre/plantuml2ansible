@@ -1,5 +1,5 @@
 @startnwdiag test_env
-' Specify diagram name above
+' Specify diagram name above, otherwise falls back on filename for output directory
 
 ' (Local) network specification
 '
@@ -12,18 +12,27 @@ network alpha {
 
   ' Host(s) specification
   '
-  ' Format: <hostname> [address = <ipv4_address>]
-  alpha_router [label = alpha-drouter, address = 172.26.0.254, cpus = 1, memory = 512]
-  alpha_web [label = alpha-web, address = 172.26.0.10, cpus = 1, memory = 512]
-  alpha_dns [label = alpha-dns, address = 172.26.0.20, cpus = 1, memory = 512]
-  alpha_mon [label = alpha-monitoring, address = 172.26.0.30, cpus = 2, memory = 2048]
+  ' Notes:
+  ' - By default the <description> attribute will be used as the resulting hostname;
+  '   <identifier> is the fallback if <description> is unused.
+  ' - Underscores in the hostname will be converted to hyphens, due to Unix conventions
+  '
+  ' Format: <identifier> [description = <description> address = <ipv4_address>, cpus = <amt_cores>, memory = <amt_gb_ram>]
+  central_router [description = "central-router", address = 172.26.0.254]
+  alpha_dns [description = "alpha-dns", address = 172.26.0.20]
+  alpha_monitoring [description = "alpha-monitoring", address = 172.26.0.30, cpus = 2, memory = 2048]
+  alpha_web [description = "alpha-web", address = 172.26.0.10]
 }
 
-' network beta {
-  ' address = 172.26.10.0/24
+network beta {
+  address = 172.26.10.0/24
 
-  ' beta-workstation [address = 172.26.10.10]
-  '
+  ' Note: hosts with multiple IP addresses (generally routers) are supported, but
+  ' the maximum is 3 IP addresses (not including the VirtualBox NAT interface)
+  ' due to technical constraints with VirtualBox. Any other unchanged variables
+  ' (like the description or cpu cores) do not have to be redefined.
+  central_router [address = 172.26.10.254]
+
 }
 
 @endnwdiag

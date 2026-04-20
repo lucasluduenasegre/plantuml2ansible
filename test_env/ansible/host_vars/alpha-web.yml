@@ -1,8 +1,6 @@
-# ansible/host_vars/srv100.yml
+# ansible/host_vars/alpha-web.yml
 ---
-rhbase_repositories:
-  - epel-release
-
+# region bertvv.rh-base
 rhbase_install_packages:
   - bash-completion
   - bind-utils
@@ -32,11 +30,21 @@ rhbase_start_services:
 
 rhbase_selinux_booleans:
   - httpd_can_network_connect
+# endregion
 
+# region bertvv.httpd
+httpd_ssl_certificate_key_file: "ca.key"
+httpd_ssl_certificate_file: "ca.crt"
+httpd_status_enable: true
+# endregion
+
+# region role_web_server
 db_user: "appuser"
 db_name: "appdb"
 db_password: "let me in"
+# endregion
 
+# region prometheus.prometheus.mysql_exporter
 mysqld_exporter_enabled_collectors:
   - info_schema.processlist
   - info_schema.innodb_metrics
@@ -49,8 +57,4 @@ mysqld_exporter_enabled_collectors:
 mysqld_exporter_port: "9104"
 mysqld_exporter_socket: "/var/lib/mysql/mysql.sock"
 mysqld_exporter_web_listen_address: "0.0.0.0:9104"
-
-httpd_ssl_certificate_key_file: "ca.key"
-httpd_ssl_certificate_file: "ca.crt"
-
-httpd_status_enable: true
+# endregion

@@ -1,10 +1,13 @@
-# ansible/host_vars/srv004.yml
+# ansible/host_vars/alpha-monitoring.yml
 ---
+# region bertvv.rhbase
 rhbase_firewall_allow_services:
   - dns
   - grafana
   # - prometheus-node-exporter
+# endregion
 
+# region prometheus.prometheus.prometheus
 prometheus_scrape_configs:
   - job_name: "node_exporter"
     metrics_path: "/metrics"
@@ -30,7 +33,9 @@ prometheus_scrape_configs:
     static_configs:
       - targets:
           - "www.alpha.lan:9104"
+# endregion
 
+# region grafana.grafana.grafana
 grafana_security:
   admin_user: admin
   admin_password: root
@@ -54,3 +59,4 @@ grafana_dashboards:
     datasource: prometheus
 
 grafana_alerting: {}
+# endregion
