@@ -64,13 +64,11 @@ bind_zones:
       - name: web
         ip: "{{ hostvars['web']['ansible_host'] }}"
         aliases:
-          - web
+          - www
       - name: control
         ip: "{{ control_node_ip }}"
       - name: "@" # Enables "http://mydomain.com/"
         ip: "{{ hostvars['web']['ansible_host'] }}"
-        aliases:
-          - www
     networks:
       - "172.26"
 # endregion

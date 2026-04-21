@@ -1,0 +1,7 @@
+# ansible/host_vars/monitoring.yml
+---
+# region bertvv.rhbase
+rhbase_firewall_allow_ports:
+  - 53/tcp # DNS
+  - 53/udp # DNS
+# endregion
