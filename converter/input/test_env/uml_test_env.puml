@@ -36,6 +36,10 @@ frame alpha {
     }
 }
 
+node central_router <<router>> {
+    
+}
+
 ' Role-to-role connections
 
 ' Format: <role_identifier> --> <role_identifier>
@@ -53,7 +57,7 @@ alpha.monitoring.grafana --> alpha.monitoring.prometheus
 ' Role-to-host or role-to-network connections
 
 ' Format: <role_identifier> ..> <host_identifier|network_identifier>
-central_router.router ..> alpha
-central_router.router ..> beta
+central_router ..> alpha
+central_router ..> beta
 
 @enduml

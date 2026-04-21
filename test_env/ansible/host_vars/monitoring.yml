@@ -1,10 +1,10 @@
-# ansible/host_vars/monitoring.yml
+# ansible/host_vars/alpha-monitoring.yml
 ---
 # region bertvv.rhbase
-rhbase_firewall_allow_services:
-  - dns
-  - grafana
-  # - prometheus-node-exporter
+rhbase_firewall_allow_ports:
+  - 53/tcp # DNS
+  - 53/udp # DNS
+  - 3000/tcp # Grafana
 # endregion
 
 # region prometheus.prometheus.prometheus
@@ -15,19 +15,12 @@ prometheus_scrape_configs:
       - targets:
           - "localhost:9100"
           - "ns1.alpha.lan:9100"
-          # - "172.16.128.1:9100"
-          # - "ns2.alpha.lan:9100"
-          # - "172.16.128.2:9100"
-          # - "dhcp.alpha.lan:9100"
-          # - "172.16.128.3:9100"
           - "www.alpha.lan:9100"
-        # - "172.16.128.100:9100"
   - job_name: "bind_exporter"
     metrics_path: "/metrics"
     static_configs:
       - targets:
           - "ns1.alpha.lan:9119"
-        # - "ns2.alpha.lan:9119"
   - job_name: "mysqld_exporter"
     metrics_path: "/metrics"
     static_configs:

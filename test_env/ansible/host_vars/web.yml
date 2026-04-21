@@ -1,6 +1,12 @@
 # ansible/host_vars/web.yml
 ---
 # region bertvv.rh-base
+rhbase_firewall_allow_ports:
+  - 80/tcp
+  - 443/tcp
+  - 9100/tcp # Node Exporter
+  - 9104/tcp # MySQL Server Exporter
+
 rhbase_install_packages:
   - bash-completion
   - bind-utils
@@ -15,14 +21,6 @@ rhbase_install_packages:
   - tree
   - vim-enhanced
   - wget
-
-rhbase_firewall_allow_services:
-  - http
-  - https
-  - prometheus-node-exporter
-
-rhbase_firewall_allow_ports:
-  - 9104/tcp
 
 rhbase_start_services:
   - httpd
@@ -42,19 +40,20 @@ httpd_status_enable: true
 db_user: "appuser"
 db_name: "appdb"
 db_password: "let me in"
+
 # endregion
 
 # region prometheus.prometheus.mysql_exporter
-mysqld_exporter_enabled_collectors:
-  - info_schema.processlist
-  - info_schema.innodb_metrics
-  - info_schema.tablestats
-  - info_schema.tables
-  - info_schema.userstats
-  - engine_innodb_status
-  - slave_status
+# mysqld_exporter_enabled_collectors:
+#   - info_schema.processlist
+#   - info_schema.innodb_metrics
+#   - info_schema.tablestats
+#   - info_schema.tables
+#   - info_schema.userstats
+#   - engine_innodb_status
+#   - slave_status
 
-mysqld_exporter_port: "9104"
-mysqld_exporter_socket: "/var/lib/mysql/mysql.sock"
-mysqld_exporter_web_listen_address: "0.0.0.0:9104"
+# mysqld_exporter_port: "9104"
+# mysqld_exporter_socket: "/var/lib/mysql/mysql.sock"
+# mysqld_exporter_web_listen_address: "0.0.0.0:9104"
 # endregion

@@ -28,7 +28,6 @@ network employee-home-lan {
 
 network virtualbox_nat {
     address = "10.0.2.0/24"
-    managed = false
 
     isprouter [address = "10.0.2.15", managed = false]
     virtualbox_nat_gateway [address = "10.0.2.2", managed = false]

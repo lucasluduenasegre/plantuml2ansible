@@ -140,7 +140,6 @@ def parse_nwdiag(puml_text):
                 # sensible defaults are used (1 CPU, 512 MB RAM, AlmaLinux 9).
                 host_cpus_regex   = re.search(r'cpus\s*=\s*"?(\d+)"?', attrs)
                 host_memory_regex = re.search(r'memory\s*=\s*"?(\d+)"?', attrs)
-                host_box_regex    = re.search(r'box\s*=\s*"?([^"]+)"?', attrs)
 
                 # If this hostname already exists in the network (i.e. it appears
                 # in multiple network blocks), its IP and network name are appended
@@ -150,8 +149,7 @@ def parse_nwdiag(puml_text):
                         "ips":      [str(ip)],
                         "networks": [current_network],
                         "cpus":     int(host_cpus_regex.group(1))   if host_cpus_regex   else 1,
-                        "memory":   int(host_memory_regex.group(1)) if host_memory_regex else 512,
-                        "box":      host_box_regex.group(1)         if host_box_regex    else "almalinux/9",
+                        "memory":   int(host_memory_regex.group(1)) if host_memory_regex else 512
                     }
                 else:
                     networks[current_network]["hosts"][hostname]["ips"].append(str(ip))
@@ -219,7 +217,6 @@ def debug_print(diagram_name, networks):
                 print(f"          Networks : {', '.join(host_data['networks'])}")
                 print(f"          CPUs     : {host_data['cpus']}")
                 print(f"          Memory   : {host_data['memory']} MB")
-                print(f"          Base box : {host_data['box']}")
         else:
             print("    Hosts   : (none)")
         print()
@@ -300,7 +297,6 @@ def convert_nwdiag(puml_text):
                     "netmasks": list(host_data["netmasks"]),
                     "cpus":     host_data["cpus"],
                     "memory":   host_data["memory"],
-                    "box":      host_data["box"],
                 }
             else:
                 for ip, netmask in zip(host_data["ips"], host_data["netmasks"]):

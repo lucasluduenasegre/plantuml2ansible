@@ -1,12 +1,11 @@
 # ansible/host_vars/dns.yml
 ---
 # region bertvv.rhbase
-rhbase_firewall_allow_services:
-  - dns
-  - prometheus-node-exporter
-
 rhbase_firewall_allow_ports:
-  - 9119/tcp # BIND exporter for Prometheus (monitoring)
+  - 53/tcp # DNS
+  - 53/udp # DNS
+  - 9100/tcp # Node Exporter
+  - 9119/tcp # BIND exporter
 # endregion
 
 # region bertvv.bind
@@ -32,7 +31,6 @@ bind_forwarders:
 bind_recursion: true
 
 # bind_allow_transfer: # For secondary DNS
-#   - 172.16.128.2
 
 bind_statistics_channels: true
 
@@ -50,30 +48,15 @@ bind_zones:
       - "{{ hostvars['dns']['ansible_host'] }}"
     name_servers:
       - dns.alpha.lan.
-      # - srv002.alpha.lan. # For secondary DNS
     allow_update:
       - "{{ hostvars['dns']['ansible_host'] }}"
-      # - 172.16.128.2 # For secondary DNS
-    # also_notify:
-    # - 172.16.128.2 # For secondary DNS
+    # also_notify: # For secondary DNS
     hosts:
-      # - name: r001
-      #   ip: 172.16.255.254
-      #   aliases:
-      #     - gw
       - name: dns
         ip: "{{ hostvars['dns']['ansible_host'] }}"
         aliases:
           - ns
           - ns1
-      # - name: srv002
-      #   ip: 172.16.128.2
-      #   aliases:
-      #     - ns2
-      # - name: srv003
-      #   ip: 172.16.128.3
-      #   aliases:
-      #     - dhcp
       - name: monitoring
         ip: "{{ hostvars['monitoring']['ansible_host'] }}"
         aliases:
@@ -89,5 +72,5 @@ bind_zones:
         aliases:
           - www
     networks:
-      - "172.16"
+      - "172.26"
 # endregion
