@@ -1,5 +1,6 @@
 @startnwdiag test_env
 ' Specify diagram name above, otherwise falls back on filename for output directory
+' Note: this name must match with that of the deployment diagram
 
 ' (Local) network specification
 '
@@ -8,20 +9,20 @@ network alpha {
   ' Subnet specification
   '
   ' Format: address = <network-address>/<prefix-length>
-  address = 172.26.0.0/24
+  address = "172.26.0.0/24"
 
   ' Host(s) specification
   '
   ' Notes:
   ' - By default the <description> attribute will be used as the resulting hostname;
-  '   <identifier> is the fallback if <description> is unused.
+  '   <host_identifier> is the fallback if <description> is unused.
   ' - Underscores in the hostname will be converted to hyphens, due to Unix conventions
   '
-  ' Format: <identifier> [description = <description> address = <ipv4_address>, cpus = <amt_cores>, memory = <amt_gb_ram>]
-  central_router [description = "central-router", address = 172.26.0.254]
-  alpha_dns [description = "alpha-dns", address = 172.26.0.20]
-  alpha_monitoring [description = "alpha-monitoring", address = 172.26.0.30, cpus = 2, memory = 2048]
-  alpha_web [description = "alpha-web", address = 172.26.0.10]
+  ' Format: <host_identifier> [description = <description> address = <ipv4_address>, cpus = <amt_cores>, memory = <amt_gb_ram>, box="<base_box>", managed = <true|false>]
+  central_router [description = "central-router", address = "172.26.0.254"]
+  dns [description = "dns", address = 172.26.0.20]
+  monitoring [description = "monitoring", address = 172.26.0.30, cpus = 2, memory = 2048]
+  web [description = "web", address = 172.26.0.10]
 }
 
 network beta {

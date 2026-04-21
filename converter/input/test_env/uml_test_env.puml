@@ -1,0 +1,59 @@
+@startuml test_env
+' Specify diagram name above, otherwise falls back on filename for output directory
+' Note: this name must match with that of the network diagram
+
+' Fix roles being reused over different nodes
+' This line makes sure that objects with the same name (nota)
+set separator .
+' Purely visual, shouldn't have an effect on the parser
+left to right direction
+
+' Note: whatever comes after "as" is what's rendered by PlantUML
+
+' Format: frame <network_identifier>
+frame alpha {
+    ' Format: node <host_identifier> as <description> 
+    node dns as "dns" {
+        ' Format: component <role_identifier> as <role_name>
+        component dns_client
+        component bind_exporter
+        component node_exporter
+        component dns_server
+    }
+
+    node monitoring as "monitoring" {
+        component dns_client
+        component node_exporter
+        component prometheus
+        component grafana
+    }
+
+    node web as "web" {
+        component dns_client
+        component node_exporter
+        component web_server
+        component mysqld_exporter
+    }
+}
+
+' Role-to-role connections
+
+' Format: <role_identifier> --> <role_identifier>
+alpha.dns.dns_client --> alpha.dns.dns_server
+alpha.monitoring.dns_client --> alpha.dns.dns_server
+alpha.web.dns_client --> alpha.dns.dns_server
+
+alpha.monitoring.prometheus --> alpha.dns.bind_exporter
+alpha.monitoring.prometheus --> alpha.dns.node_exporter
+alpha.monitoring.prometheus --> alpha.monitoring.node_exporter
+alpha.monitoring.prometheus --> alpha.web.mysqld_exporter
+alpha.monitoring.prometheus --> alpha.web.node_exporter 
+alpha.monitoring.grafana --> alpha.monitoring.prometheus
+
+' Role-to-host or role-to-network connections
+
+' Format: <role_identifier> ..> <host_identifier|network_identifier>
+central_router.router ..> alpha
+central_router.router ..> beta
+
+@enduml

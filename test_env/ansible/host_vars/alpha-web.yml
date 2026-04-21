@@ -1,4 +1,4 @@
-# ansible/host_vars/alpha-web.yml
+# ansible/host_vars/web.yml
 ---
 # region bertvv.rh-base
 rhbase_install_packages:

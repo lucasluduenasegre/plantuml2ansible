@@ -11,11 +11,11 @@ all:
       hosts:
         central-router:
           ansible_host: 172.26.0.254
-        alpha-web:
+        web:
           ansible_host: 172.26.0.10
-        alpha-dns:
+        dns:
           ansible_host: 172.26.0.20
-        alpha-monitoring:
+        monitoring:
           ansible_host: 172.26.0.30
     beta:
       hosts:

@@ -1,22 +1,20 @@
 # vagrant_hosts.yml
 ---
 {% for hostname, host_data in all_hosts.items() %}
-{% if host_data.ips | length == 1 %}
 - name: {{ hostname }}
+{% if host_data.ips | length == 1 %}
   ip: {{ host_data.ips[0] }}
   netmask: {{ host_data.netmasks[0] }}
-  cpus: {{ host_data.cpus }}
-  memory: {{ host_data.memory }}
 {% else %}
-- name: {{ hostname }}
-  cpus: {{ host_data.cpus }}
-  memory: {{ host_data.memory }}
   networks:
 {% for ip, netmask in host_data.ips | zip(host_data.netmasks) %}
     - ip: {{ ip }}
       netmask: {{ netmask }}
 {% endfor %}
 {% endif %}
+  cpus: {{ host_data.cpus }}
+  memory: {{ host_data.memory }}
+  box: {{ host_data.box }}
 
 {% endfor %}
 - name: control
@@ -24,26 +22,27 @@
   netmask: 255.255.0.0
   cpus: 1
   memory: 512
+  box: almalinux/9
 
 # Examples
 
 # Host with a single IP address
 
 # - name: <hostname>
-#   cpus: <amt_cores>
-#   memory: <amt_gb_ram>
 #   ip: <ipv4_address>
 #   netmask: <netmask> # (*)
+#   cpus: <amt_cores>
+#   memory: <amt_gb_ram>
 
 # Host with multipe IP addresses (max. 3) (**)
 
 # - name: <hostname>
-#   cpus: <amt_cores>
-#   memory: <amt_gb_ram>
 #   networks:
 #     - ip: <ipv4_address>
 #       netmask: <netmask>
 #     ...
+#   cpus: <amt_cores>
+#   memory: <amt_gb_ram>
 
 # Notes:
 # - (*) <netmask> is derived from the network the host is defined under

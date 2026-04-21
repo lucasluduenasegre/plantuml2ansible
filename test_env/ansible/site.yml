@@ -6,20 +6,20 @@
   gather_facts: true
   roles: [bertvv.rh-base]
 
-- name: Configure alpha-dns
-  hosts: alpha-dns
+- name: Configure dns
+  hosts: dns
   become: true
   roles:
     - role_dns_server
     - prometheus.prometheus.bind_exporter
 
 - name: Set  DNS server(s) for every host
-  hosts: all:!alpha-dns
+  hosts: all:!dns
   become: true
   roles: [role_dns_client]
 
-- name: Configure alpha-monitoring
-  hosts: alpha-monitoring
+- name: Configure monitoring
+  hosts: monitoring
   become: true
   roles:
     - prometheus.prometheus.prometheus
@@ -30,8 +30,8 @@
   become: true
   roles: [prometheus.prometheus.node_exporter]
 
-- name: Configure alpha-web
-  hosts: alpha-web
+- name: Configure web
+  hosts: web
   become: true
   # pre_tasks:
   #   - name: Create mysqld_exporter cert dir

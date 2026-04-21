@@ -9,19 +9,19 @@
     - ip: 172.26.10.254
       netmask: 255.255.255.0
 
-- name: alpha-web
+- name: web
   ip: 172.26.0.10
   netmask: 255.255.255.0
   cpus: 1
   memory: 512
 
-- name: alpha-dns
+- name: dns
   ip: 172.26.0.20
   netmask: 255.255.255.0
   cpus: 1
   memory: 512
 
-- name: alpha-monitoring
+- name: monitoring
   ip: 172.26.0.30
   netmask: 255.255.255.0
   cpus: 2
