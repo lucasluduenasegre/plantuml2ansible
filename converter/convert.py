@@ -253,29 +253,27 @@ def convert(puml_path):
     diagram_type = detect_diagram_type(puml_text)
 
     if diagram_type == "nwdiag":
-        convert_nwdiag(puml_text)
+        convert_nwdiag(puml_text, puml_path)
     elif diagram_type == "uml":
-        convert_uml(puml_text)
+        convert_uml(puml_text, puml_path)
 # endregion
 
 # region convert_nwdiag()
 # Handles network diagrams (@startnwdiag). Parses the diagram, renders the
 # Ansible inventory and Vagrant hosts file from the extracted data.
-def convert_nwdiag(puml_text):
+def convert_nwdiag(puml_text, puml_path):
     networks, diagram_name = parse_nwdiag(puml_text)
+
+    debug_print(diagram_name, networks)
 
     if not networks:
         print(err("Error: no networks found in diagram. Is it a valid nwdiag file?"), file=sys.stderr)
         sys.exit(1)
 
     if not diagram_name:
-        # There is no clean way to fall back to a filename here since convert_nwdiag()
-        # no longer receives the path. If this fallback is important, puml_path can
-        # be passed as an optional second argument.
-        print(warn("Warning: no diagram name found in file. Output directory will be named 'unnamed'."))
-        diagram_name = "unnamed"
-
-    debug_print(diagram_name, networks)
+        # If the diagram does not contain a diagram name after @startnwdiag, fall back to puml_path
+        print(warn("Warning: no diagram name found in file. Output directory will be named after the filename of the diagram."))
+        diagram_name = os.path.splitext(os.path.basename(puml_path))[0]
 
     output_env_path = os.path.join("output", diagram_name)
 

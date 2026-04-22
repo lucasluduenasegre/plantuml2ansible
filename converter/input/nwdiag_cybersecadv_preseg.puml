@@ -3,17 +3,17 @@ network internal-company-lan {
     address = "172.30.0.0/16"
 
     companyrouter [address = "172.30.255.254", memory = 1024]
-    dns [address = "172.30.0.4", memory = 256, box = "generic/alpine318"]
+    dns [address = "172.30.0.4", memory = 256]
     web [address = "172.30.0.10", memory = 1024]
-    database [address = "172.30.0.15", memory = 256, box = "generic/alpine318"]
-    employee [address = "172.30.0.123", memory = 256, box = "generic/alpine318"]
+    database [address = "172.30.0.15", memory = 256]
+    employee [address = "172.30.0.123", memory = 256]
 }
 
 network fake-internet {
     address = "192.168.62.0/24"
 
     companyrouter [address = "192.168.62.253"]
-    isprouter [address = "192.168.62.254", memory = 256, box = "generic/alpine318"]
+    isprouter [address = "192.168.62.254", memory = 256]
     red [address = "192.168.62.66"]
     your_laptop [description = "your-laptop", address = "dhcp"]
     homerouter [address = "192.168.62.42", memory = 1024]

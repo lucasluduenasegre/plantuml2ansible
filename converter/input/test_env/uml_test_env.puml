@@ -8,56 +8,70 @@ set separator .
 ' Purely visual, shouldn't have an effect on the parser
 left to right direction
 
+' Network definition
+'
 ' Note: whatever comes after "as" is what's rendered by PlantUML
-
+'
 ' Format: frame <network_identifier>
 frame alpha {
+    ' Host definition
+    '
     ' Format: node <host_identifier> as <description> 
     node dns as "dns" {
+        
+        ' Role definition
+        '
         ' Format: component <role_identifier> as <role_name>
-        component dns_client
         component bind_exporter
-        component node_exporter
+        component dns_client
         component dns_server
+        component node_exporter
     }
 
     node monitoring as "monitoring" {
         component dns_client
+        component grafana
         component node_exporter
         component prometheus
-        component grafana
     }
 
     node web as "web" {
         component dns_client
+        component mysqld_exporter
         component node_exporter
         component web_server
-        component mysqld_exporter
     }
 }
 
-node central_router <<router>> {
-    
-}
+' Router definition
+'
+' Note: In the resulting diagram, the router sits topologically outside all frames/networks,
+'       which in practice is not accurate. This is a limitation by PlantUML, as an object
+'       can't be nested under multiple other objects. In reality, the router will in fact
+'       belong to multiple networks.
+'
+' Format: node <router_identifier> <<router>>
+node central_router <<router>>
 
 ' Role-to-role connections
-
-' Format: <role_identifier> --> <role_identifier>
+'
+' Format: <network_identifier>.<host_identifier>.<role_identifier> --> <network_identifier>.<host_identifier>.<role_identifier>
 alpha.dns.dns_client --> alpha.dns.dns_server
+
 alpha.monitoring.dns_client --> alpha.dns.dns_server
+alpha.monitoring.grafana --> alpha.monitoring.prometheus
+alpha.monitoring.prometheus --> alpha.dns.node_exporter
+alpha.monitoring.prometheus --> alpha.dns.bind_exporter
+alpha.monitoring.prometheus --> alpha.monitoring.node_exporter
+alpha.monitoring.prometheus --> alpha.web.node_exporter
+alpha.monitoring.prometheus --> alpha.web.mysqld_exporter
+
 alpha.web.dns_client --> alpha.dns.dns_server
 
-alpha.monitoring.prometheus --> alpha.dns.bind_exporter
-alpha.monitoring.prometheus --> alpha.dns.node_exporter
-alpha.monitoring.prometheus --> alpha.monitoring.node_exporter
-alpha.monitoring.prometheus --> alpha.web.mysqld_exporter
-alpha.monitoring.prometheus --> alpha.web.node_exporter 
-alpha.monitoring.grafana --> alpha.monitoring.prometheus
-
-' Role-to-host or role-to-network connections
-
-' Format: <role_identifier> ..> <host_identifier|network_identifier>
-central_router ..> alpha
-central_router ..> beta
+' Router-to-network connections
+'
+' Format: <router_identifier> --- <host_identifier|network_identifier>
+central_router --- alpha
+central_router --- beta
 
 @enduml
