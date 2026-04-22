@@ -1,0 +1,78 @@
+# role-config.yml
+# Maps simplified role identifiers (as used in deployment diagrams) to their
+# fully qualified Ansible role names and associated metadata.
+#
+# Keys per role:
+#   fqcn        (required) Fully qualified collection name used in playbooks
+#   packages    (optional) Packages installed by bertvv.rh-base for this role
+#   exporter    (optional) Present only for Prometheus exporter roles
+#     port        Port the exporter listens on
+#     job_name    Prometheus scrape job name
+#     dashboard   Grafana dashboard metadata (optional)
+#       id          Grafana dashboard ID
+#       revision    Grafana dashboard revision
+#       folder      Grafana dashboard folder name
+#       datasource  Grafana datasource name
+
+roles:
+  dns_server:
+    fqcn: role_dns_server
+    packages: []
+
+  dns_client:
+    fqcn: role_dns_client
+    packages: []
+
+  web_server:
+    fqcn: role_web_server
+    packages:
+      - httpd
+      - mariadb-server
+      - php-fpm
+      - php-mysqlnd
+      - python3-PyMySQL
+
+  prometheus:
+    fqcn: prometheus.prometheus.prometheus
+    packages: []
+
+  grafana:
+    fqcn: grafana.grafana.grafana
+    packages: []
+
+  node_exporter:
+    fqcn: prometheus.prometheus.node_exporter
+    packages: []
+    exporter:
+      port: 9100
+      job_name: node_exporter
+      dashboard:
+        id: 1860
+        revision: 42
+        folder: "Node Exporter"
+        datasource: prometheus
+
+  bind_exporter:
+    fqcn: prometheus.prometheus.bind_exporter
+    packages: []
+    exporter:
+      port: 9119
+      job_name: bind_exporter
+      dashboard:
+        id: 12172
+        revision: 6
+        folder: "Bind9"
+        datasource: prometheus
+
+  mysqld_exporter:
+    fqcn: prometheus.prometheus.mysqld_exporter
+    packages:
+      - python3-PyMySQL
+    exporter:
+      port: 9104
+      job_name: mysqld_exporter
+      dashboard:
+        id: 14057
+        revision: 1
+        folder: "MySQL"
+        datasource: prometheus

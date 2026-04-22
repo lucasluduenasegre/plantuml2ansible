@@ -15,7 +15,7 @@ network fake-internet {
     companyrouter [address = "192.168.62.253"]
     isprouter [address = "192.168.62.254", memory = 256]
     red [address = "192.168.62.66"]
-    your_laptop [description = "your-laptop", address = "dhcp"]
+    your_laptop [description = "your-laptop", address = "dhcp", managed = false]
     homerouter [address = "192.168.62.42", memory = 1024]
 }
 

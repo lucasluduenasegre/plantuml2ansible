@@ -28,7 +28,7 @@ frame alpha {
         component node_exporter
     }
 
-    node monitoring as "monitoring" {
+    node monitoring {
         component dns_client
         component grafana
         component node_exporter

@@ -1,0 +1,4 @@
+# requirements.txt
+jinja2
+pyyaml
+yamllint
