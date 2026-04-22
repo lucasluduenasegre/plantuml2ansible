@@ -1,5 +1,14 @@
 # vagrant_hosts.yml
 ---
+- name: central-router
+  networks:
+    - ip: 172.26.0.254
+      netmask: 255.255.255.0
+    - ip: 172.26.10.254
+      netmask: 255.255.255.0
+  cpus: 1
+  memory: 512
+
 - name: dns
   ip: 172.26.0.20
   netmask: 255.255.255.0
@@ -19,7 +28,7 @@
   memory: 512
 
 - name: control
-  ip: 172.26.0.2
+  ip: 172.26.255.253
   netmask: 255.255.0.0
   cpus: 1
   memory: 512
@@ -29,20 +38,20 @@
 # Host with a single IP address
 
 # - name: <hostname>
-#   cpus: <amt_cores>
-#   memory: <amt_gb_ram>
 #   ip: <ipv4_address>
 #   netmask: <netmask> # (*)
+#   cpus: <amt_cores>
+#   memory: <amt_gb_ram>
 
 # Host with multipe IP addresses (max. 3) (**)
 
 # - name: <hostname>
-#   cpus: <amt_cores>
-#   memory: <amt_gb_ram>
 #   networks:
 #     - ip: <ipv4_address>
 #       netmask: <netmask>
 #     ...
+#   cpus: <amt_cores>
+#   memory: <amt_gb_ram>
 
 # Notes:
 # - (*) <netmask> is derived from the network the host is defined under

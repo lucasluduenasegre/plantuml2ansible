@@ -452,28 +452,37 @@ def load_role_config(role_config_path=None):
 # Every host in the deployment diagram must exist in the network diagram and
 # vice versa. Exits with a list of all mismatches found rather than stopping
 # at the first one.
-def validate_diagrams(networks, frames):
+def validate_diagrams(networks, frames, routers):
     errors = []
 
-    # Collect the flat set of hostnames from each diagram.
     nwdiag_hosts = {
-        hostname for net_data in networks.values() for hostname in net_data["hosts"]
+        hostname
+        for net_data in networks.values()
+        for hostname in net_data["hosts"]
     }
     uml_hosts = {
         node_data["label"]
         for frame_data in frames.values()
         for node_data in frame_data["nodes"].values()
     }
+    router_labels = {router_data["label"] for router_data in routers.values()}
 
+    # Regular host cross-check (routers excluded).
     for hostname in sorted(uml_hosts - nwdiag_hosts):
-        errors.append(
-            f"  Host '{hostname}' is in the deployment diagram but not in the network diagram."
-        )
+        errors.append(f"  Host '{hostname}' is in the deployment diagram but not in the network diagram.")
 
-    for hostname in sorted(nwdiag_hosts - uml_hosts):
-        errors.append(
-            f"  Host '{hostname}' is in the network diagram but not in the deployment diagram."
-        )
+    for hostname in sorted((nwdiag_hosts - router_labels) - uml_hosts):
+        errors.append(f"  Host '{hostname}' is in the network diagram but not in the deployment diagram.")
+
+    # Router cross-check: every router in the network diagram must have a
+    # corresponding <<router>> node in the deployment diagram and vice versa.
+    for router_id, router_data in sorted(routers.items()):
+        if router_data["label"] not in nwdiag_hosts:
+            errors.append(f"  Router '{router_data['label']}' is in the deployment diagram but not in the network diagram.")
+
+    for label in sorted(router_labels - nwdiag_hosts):
+        if label not in uml_hosts:
+            errors.append(f"  Router '{label}' is in the network diagram but has no <<router>> node in the deployment diagram.")
 
     if errors:
         print(err("Error: diagrams are out of sync:"), file=sys.stderr)
@@ -551,9 +560,9 @@ def convert(nwdiag_path, uml_path=None, config_path=None):
             sys.exit(1)
 
         uml_diagram_name, frames, routers, connections = parse_uml(uml_text)
-        # Cross-validation and convert_uml() call go here in the next steps.
+        validate_diagrams(networks, frames, routers)
         convert_uml(
-            uml_text, networks, diagram_name, frames, routers, connections, config
+            networks, diagram_name, frames, routers, connections, config
         )
 
 
@@ -626,10 +635,9 @@ def convert_nwdiag(networks, diagram_name):
 
 
 # region convert_uml()
-# Handles network diagrams (@startnwdiag).
-def convert_uml(puml_text, puml_path):
-    diagram_name, frames, routers, connections = parse_uml(puml_text)
-
+# Handles deployment diagrams (@startuml). Renders host_vars, site.yml and
+# routing.yml from the parsed deployment diagram and network data.
+def convert_uml(networks, diagram_name, frames, routers, connections, config):
     debug_print_uml(diagram_name, frames, routers, connections)
 
     if not frames:
@@ -644,10 +652,10 @@ def convert_uml(puml_text, puml_path):
     if not diagram_name:
         print(
             warn(
-                "Warning: no diagram name found in file. Output directory will be named after the filename of the diagram."
+                "Warning: no diagram name found in file. Output directory will be named 'unnamed'."
             )
         )
-        diagram_name = os.path.splitext(os.path.basename(puml_path))[0]
+        diagram_name = "unnamed"
 
     # Template rendering will go here once the data structure is validated.
 
