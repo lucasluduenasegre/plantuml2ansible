@@ -222,7 +222,7 @@ def parse_nwdiag(puml_text):
                     )
                     sys.exit(1)
 
-    return networks, diagram_name
+    return diagram_name, networks
 
 
 # endregion
@@ -356,7 +356,7 @@ def parse_uml(puml_text):
 # Prints a structured summary of the parsed data to stdout before any files
 # are written. Useful for verifying that the parser read the diagram correctly.
 def debug_print_nwdiag(diagram_name, networks):
-    print(bold(f"\n=== Parsed diagram: '{diagram_name}' ===\n"))
+    print(bold(f"\n=== Parsed network diagram: '{diagram_name}' ===\n"))
     for net_name, net_data in networks.items():
         print(bold(f"  Network: {net_name}"))
         print(f"    Subnet  : {net_data['subnet']}/{net_data['netmask']}")
@@ -410,7 +410,7 @@ def debug_print_uml(diagram_name, frames, routers, connections):
 
 # region load_role_config()
 # Loads and validates role-config.yml. Accepts an explicit path (from --config)
-# or falls back to role-config.yml next to convert.py.
+# or falls back to role-config.yml next to plantuml2ansible.py.
 def load_role_config(role_config_path=None):
     if role_config_path is None:
         role_config_path = os.path.join(
@@ -456,9 +456,7 @@ def validate_diagrams(networks, frames, routers):
     errors = []
 
     nwdiag_hosts = {
-        hostname
-        for net_data in networks.values()
-        for hostname in net_data["hosts"]
+        hostname for net_data in networks.values() for hostname in net_data["hosts"]
     }
     uml_hosts = {
         node_data["label"]
@@ -469,20 +467,28 @@ def validate_diagrams(networks, frames, routers):
 
     # Regular host cross-check (routers excluded).
     for hostname in sorted(uml_hosts - nwdiag_hosts):
-        errors.append(f"  Host '{hostname}' is in the deployment diagram but not in the network diagram.")
+        errors.append(
+            f"  Host '{hostname}' is in the deployment diagram but not in the network diagram."
+        )
 
     for hostname in sorted((nwdiag_hosts - router_labels) - uml_hosts):
-        errors.append(f"  Host '{hostname}' is in the network diagram but not in the deployment diagram.")
+        errors.append(
+            f"  Host '{hostname}' is in the network diagram but not in the deployment diagram."
+        )
 
     # Router cross-check: every router in the network diagram must have a
     # corresponding <<router>> node in the deployment diagram and vice versa.
     for router_id, router_data in sorted(routers.items()):
         if router_data["label"] not in nwdiag_hosts:
-            errors.append(f"  Router '{router_data['label']}' is in the deployment diagram but not in the network diagram.")
+            errors.append(
+                f"  Router '{router_data['label']}' is in the deployment diagram but not in the network diagram."
+            )
 
     for label in sorted(router_labels - nwdiag_hosts):
         if label not in uml_hosts:
-            errors.append(f"  Router '{label}' is in the network diagram but has no <<router>> node in the deployment diagram.")
+            errors.append(
+                f"  Router '{label}' is in the network diagram but has no <<router>> node in the deployment diagram."
+            )
 
     if errors:
         print(err("Error: diagrams are out of sync:"), file=sys.stderr)
@@ -517,53 +523,94 @@ def validate_templates(env):
 # endregion
 
 
-# region convert()
-# This is the main entry point for the script. It reads the file, detects the
-# diagram type, and hands it off to the appropriate conversion function.
-def convert(nwdiag_path, uml_path=None, config_path=None):
-    config = load_role_config(config_path)
+# region build_playbook()
+# Builds a playbook based on the deployment diagram frames and the
+# role configuration. Inter-host ordering is determined by depends_on (via
+# topological sort); intra-host role ordering is determined by priority.
+def build_playbook(frames, role_config):
+    roles = role_config["roles"]
 
-    if not os.path.isfile(nwdiag_path):
-        print(err(f"Error: file not found: {nwdiag_path}"), file=sys.stderr)
-        sys.exit(1)
+    DEFAULT_PRIORITY = 100
 
-    with open(nwdiag_path) as f:
-        nwdiag_text = f.read()
+    # Build a flat map of role_identifier -> set of hosts that have it.
+    role_hosts = {}
+    for frame_data in frames.values():
+        for node_data in frame_data["nodes"].values():
+            hostname = node_data["label"]
+            for role in node_data["roles"]:
+                role_hosts.setdefault(role, set()).add(hostname)
 
-    nwdiag_type = detect_diagram_type(nwdiag_text)
-    if nwdiag_type != "nwdiag":
+    # Build per-host role lists in diagram order.
+    host_roles = {}
+    for frame_data in frames.values():
+        for node_data in frame_data["nodes"].values():
+            hostname = node_data["label"]
+            host_roles[hostname] = node_data["roles"]
+
+    # Topological sort of hosts based on depends_on.
+    # Build a dependency graph: host -> set of hosts it must come after.
+    host_deps = {hostname: set() for hostname in host_roles}
+    for role, role_data in roles.items():
+        for dep_role in role_data.get("depends_on", []):
+            if dep_role in role_hosts and role in role_hosts:
+                for dependent_host in role_hosts[role]:
+                    for provider_host in role_hosts[dep_role]:
+                        if dependent_host != provider_host:
+                            host_deps[dependent_host].add(provider_host)
+
+    ordered_hosts = topological_sort(host_roles.keys(), host_deps)
+
+    # Assemble playbook, sorting roles within each host by priority.
+    playbook = []
+    for hostname in ordered_hosts:
+        sorted_roles = sorted(
+            host_roles[hostname],
+            key=lambda r: roles.get(r, {}).get("priority", DEFAULT_PRIORITY),
+        )
+        playbook.append(
+            {
+                "hostname": hostname,
+                "roles": [roles[r]["fqcn"] for r in sorted_roles if r in roles],
+            }
+        )
+
+    return playbook
+
+
+# endregion
+
+
+# region topological_sort()
+# Sorts hosts based on their dependencies.
+def topological_sort(hosts, host_deps):
+    # Kahn's algorithm — stable (preserves diagram order among independent hosts).
+    from collections import deque
+
+    in_degree = {h: 0 for h in hosts}
+    for h, predecessors in host_deps.items():
+        in_degree[h] += len(predecessors)
+
+    queue = deque(h for h in hosts if in_degree[h] == 0)
+    result = []
+    while queue:
+        h = queue.popleft()
+        result.append(h)
+        for other in hosts:
+            if h in host_deps.get(other, set()):
+                in_degree[other] -= 1
+                if in_degree[other] == 0:
+                    queue.append(other)
+
+    if len(result) != len(list(hosts)):
         print(
             err(
-                f"Error: expected a @startnwdiag file, got '{nwdiag_type}': {nwdiag_path}"
+                "Error: circular dependency detected in role-config.yml depends_on definitions."
             ),
             file=sys.stderr,
         )
         sys.exit(1)
 
-    networks, diagram_name = parse_nwdiag(nwdiag_text)
-    convert_nwdiag(networks, diagram_name)
-
-    if uml_path is not None:
-        if not os.path.isfile(uml_path):
-            print(err(f"Error: file not found: {uml_path}"), file=sys.stderr)
-            sys.exit(1)
-
-        with open(uml_path) as f:
-            uml_text = f.read()
-
-        uml_type = detect_diagram_type(uml_text)
-        if uml_type != "uml":
-            print(
-                err(f"Error: expected a @startuml file, got '{uml_type}': {uml_path}"),
-                file=sys.stderr,
-            )
-            sys.exit(1)
-
-        uml_diagram_name, frames, routers, connections = parse_uml(uml_text)
-        validate_diagrams(networks, frames, routers)
-        convert_uml(
-            networks, diagram_name, frames, routers, connections, config
-        )
+    return result
 
 
 # endregion
@@ -572,7 +619,7 @@ def convert(nwdiag_path, uml_path=None, config_path=None):
 # region convert_nwdiag()
 # Handles network diagrams (@startnwdiag). Renders the Ansible inventory and
 # Vagrant hosts file from the already-parsed network data.
-def convert_nwdiag(networks, diagram_name):
+def convert_nwdiag(diagram_name, networks):
     if not networks:
         print(
             err("Error: no networks found in diagram. Is it a valid nwdiag file?"),
@@ -637,9 +684,7 @@ def convert_nwdiag(networks, diagram_name):
 # region convert_uml()
 # Handles deployment diagrams (@startuml). Renders host_vars, site.yml and
 # routing.yml from the parsed deployment diagram and network data.
-def convert_uml(networks, diagram_name, frames, routers, connections, config):
-    debug_print_uml(diagram_name, frames, routers, connections)
-
+def convert_uml(diagram_name, networks, frames, routers, connections, role_config):
     if not frames:
         print(
             err(
@@ -657,7 +702,85 @@ def convert_uml(networks, diagram_name, frames, routers, connections, config):
         )
         diagram_name = "unnamed"
 
-    # Template rendering will go here once the data structure is validated.
+    debug_print_uml(diagram_name, frames, routers, connections)
+
+    output_env_path = os.path.join("output", diagram_name)
+
+    env = Environment(
+        loader=FileSystemLoader("templates/"),
+        trim_blocks=True,
+        lstrip_blocks=True,
+    )
+    env.filters["zip"] = zip
+
+    validate_templates(env)
+
+    if routers:
+        template = env.get_template("ansible/routing.yml.j2")
+        output_path = os.path.join(output_env_path, "ansible/routing.yml")
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        with open(output_path, "w") as f:
+            f.write(template.render(routers=routers))
+        print(f'Generated "{output_path}"')
+
+    playbook = build_playbook(frames, role_config)
+
+    template = env.get_template("ansible/site.yml.j2")
+    output_path = os.path.join(output_env_path, "ansible/site.yml")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, "w") as f:
+        f.write(template.render(playbook=playbook))
+    print(f'Generated "{output_path}"')
+
+
+# endregion
+
+
+# region convert()
+# This is the main entry point for the script. It reads the file, detects the
+# diagram type, and hands it off to the appropriate conversion function.
+def convert(nwdiag_path, uml_path=None, role_config_path=None):
+    role_config = load_role_config(role_config_path)
+
+    if not os.path.isfile(nwdiag_path):
+        print(err(f"Error: file not found: {nwdiag_path}"), file=sys.stderr)
+        sys.exit(1)
+
+    with open(nwdiag_path) as f:
+        nwdiag_text = f.read()
+
+    nwdiag_type = detect_diagram_type(nwdiag_text)
+    if nwdiag_type != "nwdiag":
+        print(
+            err(
+                f"Error: expected a @startnwdiag file, got '{nwdiag_type}': {nwdiag_path}"
+            ),
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    diagram_name, networks = parse_nwdiag(nwdiag_text)
+    convert_nwdiag(diagram_name, networks)
+
+    if uml_path is not None:
+        if not os.path.isfile(uml_path):
+            print(err(f"Error: file not found: {uml_path}"), file=sys.stderr)
+            sys.exit(1)
+
+        with open(uml_path) as f:
+            uml_text = f.read()
+
+        uml_type = detect_diagram_type(uml_text)
+        if uml_type != "uml":
+            print(
+                err(f"Error: expected a @startuml file, got '{uml_type}': {uml_path}"),
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        uml_diagram_name, frames, routers, connections = parse_uml(uml_text)
+        validate_diagrams(networks, frames, routers)
+        convert_uml(diagram_name, networks, frames, routers, connections, role_config)
 
 
 # endregion
@@ -675,14 +798,17 @@ def main():
         help="Path to the @startuml deployment diagram (optional)",
     )
     parser.add_argument(
-        "--config",
+        "--role-config",
         default=None,
         metavar="PATH",
-        help="Path to role-config.yml (default: next to convert.py)",
+        dest="role_config_path",
+        help="Path to role-config.yml (default: next to plantuml2ansible.py)",
     )
     args = parser.parse_args()
     convert(
-        nwdiag_path=args.nwdiag_path, uml_path=args.uml_path, config_path=args.config
+        nwdiag_path=args.nwdiag_path,
+        uml_path=args.uml_path,
+        role_config_path=args.role_config_path,
     )
 
 

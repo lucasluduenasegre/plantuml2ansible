@@ -4,7 +4,7 @@
 #
 # Keys per role:
 #   fqcn        (required) Fully qualified collection name used in playbooks
-#   packages    (optional) Packages installed by bertvv.rh-base for this role
+#   packages    (optional) Packages installed by bertvv.rhbase for this role
 #   exporter    (optional) Present only for Prometheus exporter roles
 #     port        Port the exporter listens on
 #     job_name    Prometheus scrape job name
@@ -16,15 +16,24 @@
 
 roles:
   dns_server:
-    fqcn: role_dns_server
+    fqcn: role_dns_server # custom role
+    priority: 10
+    galaxy_roles:
+      - bertvv.bind
     packages: []
 
   dns_client:
-    fqcn: role_dns_client
+    fqcn: role_dns_client # custom role
+    priority: 20
+    depends_on:
+      - dns_server
     packages: []
 
   web_server:
-    fqcn: role_web_server
+    fqcn: role_web_server # custom role
+    priority: 10
+    galaxy_roles:
+      - bertvv.httpd
     packages:
       - httpd
       - mariadb-server
@@ -33,15 +42,26 @@ roles:
       - python3-PyMySQL
 
   prometheus:
-    fqcn: prometheus.prometheus.prometheus
+    fqcn: prometheus.prometheus.prometheus # role from the prometheus.prometheus collection
+    depends_on: dns_server
+    priority: 20
+    galaxy_collections:
+      - prometheus.prometheus
     packages: []
 
   grafana:
-    fqcn: grafana.grafana.grafana
+    fqcn: grafana.grafana.grafana # role from the grafana.grafana collection
+    depends_on: prometheus
+    priority: 30
+    galaxy_collections:
+      - grafana.grafana
     packages: []
 
   node_exporter:
-    fqcn: prometheus.prometheus.node_exporter
+    fqcn: prometheus.prometheus.node_exporter # role from the prometheus.prometheus collection
+    priority: 50
+    galaxy_collections:
+      - prometheus.prometheus
     packages: []
     exporter:
       port: 9100
@@ -53,7 +73,11 @@ roles:
         datasource: prometheus
 
   bind_exporter:
-    fqcn: prometheus.prometheus.bind_exporter
+    fqcn: prometheus.prometheus.bind_exporter # role from the prometheus.prometheus collection
+    priority: 50
+    depends_on: role_dns_server
+    galaxy_collections:
+      - prometheus.prometheus
     packages: []
     exporter:
       port: 9119
@@ -65,7 +89,14 @@ roles:
         datasource: prometheus
 
   mysqld_exporter:
-    fqcn: prometheus.prometheus.mysqld_exporter
+    fqcn: prometheus.prometheus.mysqld_exporter # role from the prometheus.prometheus collection
+    priority: 50
+    depends_on:
+      - web_server
+        # Assumes mysqld_exporter monitors a MySQL instance managed by web_server.
+        # Remove or adjust this dependency if targeting a standalone database host.
+    galaxy_collections:
+      - prometheus.prometheus
     packages:
       - python3-PyMySQL
     exporter:
