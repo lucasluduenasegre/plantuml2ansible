@@ -8,6 +8,16 @@ import yaml
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
 
+# region IdentedDumper()
+# Custom YAML dumper for indenting lists properly.
+class IndentedDumper(yaml.Dumper):
+    def increase_indent(self, flow=False, indentless=False):
+        return super().increase_indent(flow=flow, indentless=False)
+
+
+# endregion
+
+
 # region Colour helpers
 # These functions wrap text in ANSI escape codes for coloured terminal output.
 # The check on sys.stderr.isatty() makes sure escape codes are only added when
@@ -501,18 +511,13 @@ def validate_diagrams(networks, frames, routers):
 
 
 # region validate_templates()
-# Checks that every template listed in TEMPLATES exists before any rendering
+# Checks that every template in the given list exists before any rendering
 # starts. All missing templates are reported at once rather than failing on the
 # first one, so the user can fix them all in one go.
-def validate_templates(env):
-    missing_templates = []
-    for template_path, _ in TEMPLATES:
-        try:
-            env.get_template(template_path)
-        except TemplateNotFound:
-            missing_templates.append(template_path)
-    if missing_templates:
-        for name in missing_templates:
+def validate_templates(env, template_names):
+    missing = [name for name in template_names if not _template_exists(env, name)]
+    if missing:
+        for name in missing:
             print(
                 err(f"Error: template '{name}' not found in templates/"),
                 file=sys.stderr,
@@ -520,61 +525,12 @@ def validate_templates(env):
         sys.exit(1)
 
 
-# endregion
-
-
-# region build_playbook()
-# Builds a playbook based on the deployment diagram frames and the
-# role configuration. Inter-host ordering is determined by depends_on (via
-# topological sort); intra-host role ordering is determined by priority.
-def build_playbook(frames, role_config):
-    roles = role_config["roles"]
-
-    DEFAULT_PRIORITY = 100
-
-    # Build a flat map of role_identifier -> set of hosts that have it.
-    role_hosts = {}
-    for frame_data in frames.values():
-        for node_data in frame_data["nodes"].values():
-            hostname = node_data["label"]
-            for role in node_data["roles"]:
-                role_hosts.setdefault(role, set()).add(hostname)
-
-    # Build per-host role lists in diagram order.
-    host_roles = {}
-    for frame_data in frames.values():
-        for node_data in frame_data["nodes"].values():
-            hostname = node_data["label"]
-            host_roles[hostname] = node_data["roles"]
-
-    # Topological sort of hosts based on depends_on.
-    # Build a dependency graph: host -> set of hosts it must come after.
-    host_deps = {hostname: set() for hostname in host_roles}
-    for role, role_data in roles.items():
-        for dep_role in role_data.get("depends_on", []):
-            if dep_role in role_hosts and role in role_hosts:
-                for dependent_host in role_hosts[role]:
-                    for provider_host in role_hosts[dep_role]:
-                        if dependent_host != provider_host:
-                            host_deps[dependent_host].add(provider_host)
-
-    ordered_hosts = topological_sort(host_roles.keys(), host_deps)
-
-    # Assemble playbook, sorting roles within each host by priority.
-    playbook = []
-    for hostname in ordered_hosts:
-        sorted_roles = sorted(
-            host_roles[hostname],
-            key=lambda r: roles.get(r, {}).get("priority", DEFAULT_PRIORITY),
-        )
-        playbook.append(
-            {
-                "hostname": hostname,
-                "roles": [roles[r]["fqcn"] for r in sorted_roles if r in roles],
-            }
-        )
-
-    return playbook
+def _template_exists(env, name):
+    try:
+        env.get_template(name)
+        return True
+    except TemplateNotFound:
+        return False
 
 
 # endregion
@@ -616,6 +572,207 @@ def topological_sort(hosts, host_deps):
 # endregion
 
 
+# region build_playbook()
+# Builds a playbook based on the deployment diagram frames and the
+# role configuration. Inter-host ordering is determined by depends_on (via
+# topological sort); intra-host role ordering is determined by priority.
+def build_playbook(frames, role_config, host_roles):
+
+    DEFAULT_PRIORITY = 100
+
+    # Build a flat map of role_identifier -> set of hosts that have it.
+    role_hosts = {}
+    for hostname, roles in host_roles.items():
+        for role in roles:
+            role_hosts.setdefault(role, set()).add(hostname)
+
+    # Topological sort of hosts based on depends_on.
+    # Build a dependency graph: host -> set of hosts it must come after.
+    host_deps = {hostname: set() for hostname in host_roles}
+    for role, role_data in role_config.items():
+        for dep_role in role_data.get("depends_on", []):
+            if dep_role in role_hosts and role in role_hosts:
+                for dependent_host in role_hosts[role]:
+                    for provider_host in role_hosts[dep_role]:
+                        if dependent_host != provider_host:
+                            host_deps[dependent_host].add(provider_host)
+
+    ordered_hosts = topological_sort(host_roles.keys(), host_deps)
+
+    # Assemble playbook, sorting roles within each host by priority.
+    playbook = []
+    for hostname in ordered_hosts:
+        sorted_roles = sorted(
+            host_roles[hostname],
+            key=lambda r: role_config.get(r, {}).get("priority", DEFAULT_PRIORITY),
+        )
+        playbook.append(
+            {
+                "hostname": hostname,
+                "roles": [
+                    role_config[r]["fqcn"] for r in sorted_roles if r in role_config
+                ],
+            }
+        )
+
+    return playbook
+
+
+# endregion
+
+
+# region _build_bind_zones()
+# Derives bind_zones for a dns_server host from the parsed nwdiag networks.
+# Each network becomes a zone with A-records for every host in that network.
+def _build_bind_zones(hostname, networks):
+    zones = []
+    for net_name, net_data in networks.items():
+        if not net_data["hosts"]:
+            continue
+        records = [
+            {"name": h, "ip": host_data["ips"][0]}
+            for h, host_data in net_data["hosts"].items()
+            if host_data["ips"]
+        ]
+        zones.append(
+            {
+                "name": net_name,
+                "networks": [net_data["subnet"]],
+                "hosts": records,
+            }
+        )
+    return zones
+
+
+# endregion
+
+
+# region build_host_vars()
+# Builds host_vars files for each host based on the role configuration and
+# diagram data. Static host_vars are copied verbatim from role-config.yml;
+# __DIAGRAM_*__ sentinels are resolved from the parsed nwdiag data.
+def build_host_vars(host_roles, role_config, networks):
+
+    DEFAULT_PRIORITY = 100
+
+    # Build a flat map of role_identifier -> set of hosts that have it.
+    role_hosts = {}
+    for hostname, roles in host_roles.items():
+        for role in roles:
+            role_hosts.setdefault(role, set()).add(hostname)
+
+    # Build a flat map of hostname -> first IP across all networks.
+    host_primary_ip = {}
+    for net_data in networks.values():
+        for hostname, host_data in net_data["hosts"].items():
+            if hostname not in host_primary_ip and host_data["ips"]:
+                host_primary_ip[hostname] = host_data["ips"][0]
+
+    # Collect IPs of all hosts running dns_server.
+    dns_server_ips = sorted(
+        host_primary_ip[h]
+        for h in role_hosts.get("dns_server", set())
+        if h in host_primary_ip
+    )
+
+    # Build prometheus scrape configs from all exporter roles in the diagram.
+    # Any role with a host_vars entry ending in _port is treated as an exporter.
+    scrape_configs = []
+    for role, role_data in role_config.items():
+        if role not in role_hosts:
+            continue
+        port_key = next(
+            (k for k in role_data.get("host_vars", {}) if k.endswith("_port")),
+            None,
+        )
+        if port_key is None:
+            continue
+        port = role_data["host_vars"][port_key]
+        targets = sorted(
+            f"{host_primary_ip[h]}:{port}"
+            for h in role_hosts[role]
+            if h in host_primary_ip
+        )
+        if targets:
+            scrape_configs.append(
+                {
+                    "job_name": role,
+                    "static_configs": [{"targets": targets}],
+                }
+            )
+
+    # Collect grafana_dashboard entries from all roles present in the diagram.
+    grafana_dashboards = [
+        role_config[role]["grafana_dashboard"]
+        for role in sorted(role_hosts)
+        if role in role_config and "grafana_dashboard" in role_config[role]
+    ]
+
+    def resolve_sentinel(value, hostname):
+        match value:
+            case "__DIAGRAM_BIND_ZONES__":
+                return _build_bind_zones(hostname, networks)
+            case "__DIAGRAM_DNS_SERVER_IPS__":
+                return dns_server_ips
+            case "__DIAGRAM_SCRAPE_CONFIGS__":
+                return scrape_configs
+            case "__DIAGRAM_GRAFANA_DASHBOARDS__":
+                return grafana_dashboards
+            case _:
+                return value  # unknown sentinel — pass through as-is
+
+    def resolve_host_vars(raw_vars, hostname):
+        return {
+            key: resolve_sentinel(value, hostname) for key, value in raw_vars.items()
+        }
+
+    # Merge resolved host_vars from each role assigned to the host,
+    # sorted by priority so later roles can intentionally override earlier ones.
+    result = {}
+    for hostname, roles in host_roles.items():
+        sorted_roles = sorted(
+            roles,
+            key=lambda r: role_config.get(r, {}).get("priority", DEFAULT_PRIORITY),
+        )
+        merged = {}
+        for role in sorted_roles:
+            raw = role_config.get(role, {}).get("host_vars", {})
+            merged.update(resolve_host_vars(raw, hostname))
+        if merged:
+            result[hostname] = merged
+
+    return result
+
+
+# endregion
+
+
+# region build_requirements()
+# Derives the Ansible Galaxy requirements from the roles present in the
+# diagram. Only roles and collections actually used are included.
+# bertvv.rh-base is always included as it is applied to all hosts.
+def build_requirements(host_roles, role_config):
+    galaxy_roles = {"bertvv.rh-base"}  # always required
+    galaxy_collections = set()
+
+    present_roles = {role for roles in host_roles.values() for role in roles}
+
+    for role in present_roles:
+        role_data = role_config.get(role, {})
+        for gr in role_data.get("galaxy_roles", []):
+            galaxy_roles.add(gr)
+        for gc in role_data.get("galaxy_collections", []):
+            galaxy_collections.add(gc)
+
+    return {
+        "roles": sorted(galaxy_roles),
+        "collections": sorted(galaxy_collections),
+    }
+
+
+# endregion
+
+
 # region convert_nwdiag()
 # Handles network diagrams (@startnwdiag). Renders the Ansible inventory and
 # Vagrant hosts file from the already-parsed network data.
@@ -646,7 +803,13 @@ def convert_nwdiag(diagram_name, networks):
     )
     env.filters["zip"] = zip
 
-    validate_templates(env)
+    validate_templates(
+        env,
+        [
+            "ansible/inventory.yml.j2",
+            "vagrant-hosts.yml.j2",
+        ],
+    )
 
     all_hosts = {}
     for net_data in networks.values():
@@ -687,9 +850,7 @@ def convert_nwdiag(diagram_name, networks):
 def convert_uml(diagram_name, networks, frames, routers, connections, role_config):
     if not frames:
         print(
-            err(
-                "Error: no frames/networks found in diagram. Is it a valid deployment diagram?"
-            ),
+            err("Error: no frames found in diagram. Is it a valid deployment diagram?"),
             file=sys.stderr,
         )
         sys.exit(1)
@@ -713,7 +874,33 @@ def convert_uml(diagram_name, networks, frames, routers, connections, role_confi
     )
     env.filters["zip"] = zip
 
-    validate_templates(env)
+    env.filters["to_yaml"] = lambda value, **kwargs: yaml.dump(
+        value,
+        Dumper=IndentedDumper,
+        default_flow_style=False,
+        allow_unicode=True,
+        explicit_end=False,
+    )
+
+    validate_templates(
+        env,
+        [
+            "ansible/routing.yml.j2",
+            "ansible/requirements.yml.j2",
+            "ansible/site.yml.j2",
+            "ansible/host_vars/hostname.yml.j2",
+        ],
+    )
+
+    roles = role_config["roles"]
+
+    # Build host_roles once here — shared input for both build_playbook()
+    # and build_host_vars() to avoid duplicating the derivation logic.
+    host_roles = {
+        node_data["label"]: node_data["roles"]
+        for frame_data in frames.values()
+        for node_data in frame_data["nodes"].values()
+    }
 
     if routers:
         template = env.get_template("ansible/routing.yml.j2")
@@ -723,13 +910,34 @@ def convert_uml(diagram_name, networks, frames, routers, connections, role_confi
             f.write(template.render(routers=routers))
         print(f'Generated "{output_path}"')
 
-    playbook = build_playbook(frames, role_config)
+    playbook = build_playbook(frames, roles, host_roles)
 
     template = env.get_template("ansible/site.yml.j2")
     output_path = os.path.join(output_env_path, "ansible/site.yml")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as f:
         f.write(template.render(playbook=playbook))
+    print(f'Generated "{output_path}"')
+
+    host_vars = build_host_vars(host_roles, roles, networks)
+
+    template = env.get_template("ansible/host_vars/hostname.yml.j2")
+    for hostname, vars_dict in host_vars.items():
+        output_path = os.path.join(
+            output_env_path, "ansible/host_vars", f"{hostname}.yml"
+        )
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        with open(output_path, "w") as f:
+            f.write(template.render(hostname=hostname, host_vars=vars_dict))
+        print(f'Generated "{output_path}"')
+
+    requirements = build_requirements(host_roles, roles)
+
+    template = env.get_template("ansible/requirements.yml.j2")
+    output_path = os.path.join(output_env_path, "ansible/requirements.yml")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, "w") as f:
+        f.write(template.render(**requirements))
     print(f'Generated "{output_path}"')
 
 

@@ -3,34 +3,40 @@
 # fully qualified Ansible role names and associated metadata.
 #
 # Keys per role:
-#   fqcn        (required) Fully qualified collection name used in playbooks
-#   packages    (optional) Packages installed by bertvv.rhbase for this role
-#   exporter    (optional) Present only for Prometheus exporter roles
-#     port        Port the exporter listens on
-#     job_name    Prometheus scrape job name
-#     dashboard   Grafana dashboard metadata (optional)
-#       id          Grafana dashboard ID
-#       revision    Grafana dashboard revision
-#       folder      Grafana dashboard folder name
-#       datasource  Grafana datasource name
+#   fqcn (required)         Fully qualified collection name used in playbooks
+#   priority (optional)     Intra-host role execution order — lower runs first, default 100
+#   depends_on (optional)   Inter-host ordering — list of role identifiers that must be
+#                           applied on another host before this role's host play runs
+#   galaxy_roles (optional) Ansible Galaxy roles to install
+#   galaxy_collections (optional) Ansible Galaxy collections to install
+#   packages (optional)     Packages installed by bertvv.rh-base for this role
+#   host_vars (optional)    Variables written to the host's host_vars file.
+#                           Sentinels prefixed with __DIAGRAM_ are resolved at build time.
+#   grafana_dashboard (optional) Dashboard metadata contributed to grafana_dashboards
+#                           if this role is present in the diagram. Not written to this
+#                           role's host — consumed by the grafana role only.
 
 roles:
   dns_server:
-    fqcn: role_dns_server # custom role
+    fqcn: role_dns_server
     priority: 10
     galaxy_roles:
       - bertvv.bind
     packages: []
+    host_vars:
+      bind_zones: __DIAGRAM_BIND_ZONES__
 
   dns_client:
-    fqcn: role_dns_client # custom role
+    fqcn: role_dns_client
     priority: 20
     depends_on:
       - dns_server
     packages: []
+    host_vars:
+      dns_servers: __DIAGRAM_DNS_SERVER_IPS__
 
   web_server:
-    fqcn: role_web_server # custom role
+    fqcn: role_web_server
     priority: 10
     galaxy_roles:
       - bertvv.httpd
@@ -42,51 +48,64 @@ roles:
       - python3-PyMySQL
 
   prometheus:
-    fqcn: prometheus.prometheus.prometheus # role from the prometheus.prometheus collection
-    depends_on: dns_server
+    fqcn: prometheus.prometheus.prometheus
     priority: 20
     galaxy_collections:
       - prometheus.prometheus
     packages: []
+    host_vars:
+      prometheus_scrape_configs: __DIAGRAM_SCRAPE_CONFIGS__
 
   grafana:
     fqcn: grafana.grafana.grafana # role from the grafana.grafana collection
-    depends_on: prometheus
     priority: 30
+    depends_on:
+      - prometheus
     galaxy_collections:
       - grafana.grafana
     packages: []
+    host_vars:
+      grafana_security:
+        admin_user: admin
+        admin_password: root
+      grafana_datasources:
+        - name: prometheus
+          type: prometheus
+          access: proxy
+          url: "http://localhost:9090"
+          basicAuth: false
+      grafana_dashboards: __DIAGRAM_GRAFANA_DASHBOARDS__
+      grafana_alerting: {}
 
   node_exporter:
-    fqcn: prometheus.prometheus.node_exporter # role from the prometheus.prometheus collection
+    fqcn: prometheus.prometheus.node_exporter
     priority: 50
     galaxy_collections:
       - prometheus.prometheus
     packages: []
-    exporter:
-      port: 9100
-      job_name: node_exporter
-      dashboard:
-        id: 1860
-        revision: 42
-        folder: "Node Exporter"
-        datasource: prometheus
+    host_vars:
+      node_exporter_port: 9100
+    grafana_dashboard:
+      dashboard_id: 1860
+      revision_id: 42
+      folder: "Node Exporter"
+      datasource: prometheus
 
   bind_exporter:
     fqcn: prometheus.prometheus.bind_exporter # role from the prometheus.prometheus collection
     priority: 50
-    depends_on: role_dns_server
+    depends_on:
+      - dns_server
     galaxy_collections:
       - prometheus.prometheus
     packages: []
-    exporter:
-      port: 9119
-      job_name: bind_exporter
-      dashboard:
-        id: 12172
-        revision: 6
-        folder: "Bind9"
-        datasource: prometheus
+    host_vars:
+      bind_exporter_port: 9119
+    grafana_dashboard:
+      dashboard_id: 12172
+      revision_id: 6
+      folder: "Bind9"
+      datasource: prometheus
 
   mysqld_exporter:
     fqcn: prometheus.prometheus.mysqld_exporter # role from the prometheus.prometheus collection
@@ -99,11 +118,10 @@ roles:
       - prometheus.prometheus
     packages:
       - python3-PyMySQL
-    exporter:
-      port: 9104
-      job_name: mysqld_exporter
-      dashboard:
-        id: 14057
-        revision: 1
-        folder: "MySQL"
-        datasource: prometheus
+    host_vars:
+      mysqld_exporter_port: 9104
+    grafana_dashboard:
+      dashboard_id: 14057
+      revision_id: 1
+      folder: "MySQL"
+      datasource: prometheus

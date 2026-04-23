@@ -23,6 +23,7 @@ Since this is a proof-of-concept, there are a number of noteworthy limitations t
 ## Prerequisites
 
 - Git
+- Python 3.10 or higher
 - Vagrant
 - VirtualBox 7.1 or higher
 <!--TODO-->
