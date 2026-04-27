@@ -21,8 +21,7 @@
   become: true
   roles:
     - role_dns_client
-    - prometheus.prometheus.prometheus
-    - grafana.grafana.grafana
+    - role_monitoring_server
     - prometheus.prometheus.node_exporter
 
 - name: Configure web

@@ -53,7 +53,7 @@ pip install jinja2
 
 ### IaC-only
 
-Converting a network diagram to an IaC-only supported environment (Vagrant environment + Ansible inventory):
+Converting a network diagram to an IaC-only supported environment with Vagrant (multiple networks supported):
 ```
 python convert.py <nwdiag.puml>
 ```
@@ -62,7 +62,7 @@ This is useful if you wish to have more freedom when setting up configuration ma
 
 ### IaC + configuration management
 
-Converting a network diagram + corresponding deployment diagram to an IaC + configuration management supported environment (full Vagrant + Ansible environment)
+Converting a network diagram + corresponding deployment diagram to an IaC (Vagrant) + configuration management (Ansible) supported environment (only **one** network supported)
 ```
 python convert.py <nwdiag.puml> <uml.puml>
 ```
@@ -78,9 +78,18 @@ python convert.py <nwdiag.puml> <uml.puml> --config <role-config.yml>
 
 ## Acknowledgements & Credits
 
+### Ansible roles
+
 - https://github.com/bertvv/ansible-role-bind
 - https://github.com/bertvv/ansible-role-httpd
 - https://github.com/bertvv/ansible-role-rh-base
+
+### Grafana dashboards
+
+- https://grafana.com/grafana/dashboards/14057-mysql/
+- https://github.com/rfmoz/grafana-dashboards
+
+### Other projects
 - https://github.com/bertvv/ansible-skeleton ([Infrastructure Automation](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193608&b=5&c=1)-tailored version)
 
 <!--TODO-->

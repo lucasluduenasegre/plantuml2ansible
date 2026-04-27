@@ -4,19 +4,6 @@
 dns_servers:
   - 172.26.0.20
 grafana_alerting: {}
-grafana_dashboards:
-  - dashboard_id: 12172
-    datasource: prometheus
-    folder: Bind9
-    revision_id: 6
-  - dashboard_id: 14057
-    datasource: prometheus
-    folder: MySQL
-    revision_id: 1
-  - dashboard_id: 1860
-    datasource: prometheus
-    folder: Node Exporter
-    revision_id: 42
 grafana_datasources:
   - access: proxy
     basicAuth: false
@@ -42,3 +29,16 @@ prometheus_scrape_configs:
     static_configs:
       - targets:
           - 172.26.0.10:9104
+rhbase_firewall_allow_ports:
+  - 53/tcp
+  - 53/udp
+  - 3000/tcp
+rhbase_install_packages:
+  - bash-completion
+  - bind-utils
+  - git
+  - nano
+  - setroubleshoot-server
+  - tree
+  - vim-enhanced
+  - wget

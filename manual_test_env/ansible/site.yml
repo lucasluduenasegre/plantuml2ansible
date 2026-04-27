@@ -22,8 +22,7 @@
   hosts: monitoring
   become: true
   roles:
-    - prometheus.prometheus.prometheus
-    - grafana.grafana.grafana
+    - role_monitoring_server
 
 - name: Set up Node Exporter for every host
   hosts: all
@@ -49,6 +48,7 @@
   roles:
     - role_web_server
     - prometheus.prometheus.mysqld_exporter
+    - prometheus.prometheus.apache_exporter
   # vars:
   #   mysqld_exporter_tls_server_config:
   #     cert_file: /etc/mysqld_exporter/tls.cert

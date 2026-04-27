@@ -19,7 +19,6 @@ network alpha {
   ' - Underscores in the hostname will be converted to hyphens, due to Unix conventions
   '
   ' Format: <host_identifier> [description = <description> address = <ipv4_address>, cpus = <amt_cores>, memory = <amt_gb_ram>, box="<base_box>", managed = <true|false>]
-  central_router [description = "central-router", address = "172.26.0.254"]
   dns [description = "dns", address = "172.26.0.20"]
   monitoring [description = "monitoring", address = "172.26.0.30", cpus = 2, memory = 2048]
   web [description = "web", address = "172.26.0.10"]
@@ -33,6 +32,5 @@ network beta {
   ' the maximum is 3 IP addresses (not including the VirtualBox NAT interface)
   ' due to technical constraints with VirtualBox. Any other unchanged variables
   ' (like the description or cpu cores) do not have to be redefined.
-  central_router [address = "172.26.10.254"]
 }
 @endnwdiag

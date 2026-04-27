@@ -17,11 +17,14 @@
   memory: {{ host_data.memory }}
 
 {% endfor %}
+
+{% if include_control %}
 - name: control
   ip: 172.26.255.253
   netmask: 255.255.0.0
   cpus: 1
   memory: 512
+{% endif %}
 
 # Examples
 

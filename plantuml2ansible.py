@@ -2,6 +2,7 @@ import argparse
 import ipaddress
 import os
 import re
+import shutil
 import sys
 import yaml
 
@@ -45,6 +46,18 @@ def bold(text):
 
 
 # region Global variables
+# Packages installed on every managed host via bertvv.rh-base.
+BASE_PACKAGES = [
+    "bash-completion",
+    "bind-utils",
+    "git",
+    "nano",
+    "setroubleshoot-server",
+    "tree",
+    "vim-enhanced",
+    "wget",
+]
+
 # The environment subnet all networks in the diagram must fall within.
 # This is checked during parsing to catch misconfigured addresses early.
 ENVIRONMENT_SUBNET = ipaddress.IPv4Network("172.26.0.0/16")
@@ -54,7 +67,6 @@ ENVIRONMENT_SUBNET = ipaddress.IPv4Network("172.26.0.0/16")
 # the converter means adding one line here and one entry in render_context
 # inside convert().
 TEMPLATES = [
-    ("ansible/inventory.yml.j2", "ansible/inventory.yml"),
     ("vagrant-hosts.yml.j2", "vagrant-hosts.yml"),
 ]
 # endregion
@@ -240,7 +252,7 @@ def parse_nwdiag(puml_text):
 
 # region parse_uml()
 # Parses a @startuml deployment diagram and returns a tuple of
-# (diagram_name, frames, routers, connections).
+# (diagram_name, nodes, connections).
 def parse_uml(puml_text):
     # Strip block comments (/' ... '/) before line-by-line parsing.
     # re.DOTALL makes . match newlines so multi-line blocks are caught.
@@ -250,27 +262,21 @@ def parse_uml(puml_text):
     # Patterns compiled once, reused for every line in the loop.
     comment_re = re.compile(r"^\s*(?:'|\/\/).*")
     start_uml_regex = re.compile(r"@startuml(?:\s+(\S+))?")
-    frame_re = re.compile(r"frame\s+(\w+)\s*\{")
     node_re = re.compile(
-        r"node\s+(\w+)(?:\s+<<(\w+)>>)?(?:\s+as\s+\"([^\"]+)\")?\s*(\{)?"
+        r"node\s+(\w+)(?:\s+<<\w+>>)?(?:\s+as\s+\"([^\"]+)\")?\s*(\{)?"
     )
     component_re = re.compile(r"component\s+(\w+)(?:\s+as\s+\"([^\"]+)\")?")
     close_re = re.compile(r"^\}$")
 
     connections = []
     diagram_name = None
-    frames = {}
-    routers = {}
+    nodes = {}
 
-    # Tracks nesting so the parser knows which frame/node is currently open.
-    current_frame = None
+    # Tracks which node body is currently open.
     current_node = None
 
-    # Arrow patterns.
-    # Role-to-role:   frame.node.role --> frame.node.role
-    role_conn_re = re.compile(r"(\w+)\.(\w+)\.(\w+)\s+-->\s+(\w+)\.(\w+)\.(\w+)")
-    # Router-to-frame/node:  identifier --- identifier
-    router_conn_re = re.compile(r"(\w+)\s+---\s+(\w+)")
+    # Role-to-role:   node.role --> node.role
+    role_conn_re = re.compile(r"(\w+)\.(\w+)\s+-->\s+(\w+)\.(\w+)")
 
     for line_number, raw_line in enumerate(puml_text.splitlines(), start=1):
         line = comment_re.sub("", raw_line).strip()
@@ -285,47 +291,27 @@ def parse_uml(puml_text):
             )  # None if absent; falls back to filename in convert_uml()
             continue
 
-        # Closing brace — pop one level of nesting.
+        # Closing brace — close the current node body.
         if close_re.match(line):
-            if current_node is not None:
-                current_node = None
-            elif current_frame is not None:
-                current_frame = None
-            continue
-
-        # Frame opening.
-        m = frame_re.match(line)
-        if m:
-            current_frame = m.group(1)
             current_node = None
-            frames[current_frame] = {"nodes": {}}
             continue
 
         # Node opening.
         m = node_re.match(line)
         if m:
             node_id = m.group(1)
-            stereotype = m.group(2)  # e.g. "router" from <<router>>
-            label = m.group(3) or to_unix_hostname(node_id)
-            has_body = m.group(4) is not None  # True if line ends with {
+            label = m.group(2) or to_unix_hostname(node_id)
+            has_body = m.group(3) is not None
 
-            if stereotype and stereotype.lower() == "router":
-                routers[node_id] = {"label": to_unix_hostname(label), "connects": []}
-                # Router nodes have no components, so we do not set current_node.
-                current_node = None
-            elif current_frame is not None:
-                frames[current_frame]["nodes"][node_id] = {
-                    "label": label,
-                    "roles": [],
-                }
-                current_node = node_id if has_body else None
+            nodes[node_id] = {"label": label, "roles": []}
+            current_node = node_id if has_body else None
             continue
 
         # Component (role) inside a node.
         m = component_re.match(line)
-        if m and current_frame and current_node:
+        if m and current_node:
             role_id = m.group(1)
-            frames[current_frame]["nodes"][current_node]["roles"].append(role_id)
+            nodes[current_node]["roles"].append(role_id)
             continue
 
         # Role-to-role connection.
@@ -333,30 +319,15 @@ def parse_uml(puml_text):
         if m:
             connections.append(
                 {
-                    "from_frame": m.group(1),
-                    "from_node": m.group(2),
-                    "from_role": m.group(3),
-                    "to_frame": m.group(4),
-                    "to_node": m.group(5),
-                    "to_role": m.group(6),
+                    "from_node": m.group(1),
+                    "from_role": m.group(2),
+                    "to_node": m.group(3),
+                    "to_role": m.group(4),
                 }
             )
             continue
 
-        # Router-to-frame connection.
-        m = router_conn_re.match(line)
-        if m:
-            left, right = m.group(1), m.group(2)
-            if left in routers:
-                routers[left]["connects"].append(right)
-            elif right in routers:
-                routers[right]["connects"].append(left)
-            continue
-
-    # Drop empty frames (e.g. `frame beta {}` with no hosts yet).
-    frames = {k: v for k, v in frames.items() if v["nodes"]}
-
-    return diagram_name, frames, routers, connections
+    return diagram_name, nodes, connections
 
 
 # endregion
@@ -392,25 +363,17 @@ def debug_print_nwdiag(diagram_name, networks):
 
 # region debug_print_uml()
 # Similar to debug_print_nwdiag().
-def debug_print_uml(diagram_name, frames, routers, connections):
+def debug_print_uml(diagram_name, nodes, connections):
     print(bold(f"\n=== Parsed deployment diagram: '{diagram_name}' ===\n"))
-    for frame_id, frame_data in frames.items():
-        print(bold(f"  Frame: {frame_id}"))
-        for node_id, node_data in frame_data["nodes"].items():
-            print(f"    Node : {node_id} (label: '{node_data['label']}')")
-            for role in node_data["roles"]:
-                print(f"      - {role}")
-    if routers:
-        print(bold("\n  Routers:"))
-        for router_id, router_data in routers.items():
-            print(
-                f"    {router_id} (label: '{router_data['label']}') -> {router_data['connects']}"
-            )
+    for node_id, node_data in nodes.items():
+        print(f"  Node : {node_id} (label: '{node_data['label']}')")
+        for role in node_data["roles"]:
+            print(f"    - {role}")
     if connections:
         print(bold("\n  Connections:"))
         for c in connections:
             print(
-                f"    {c['from_frame']}.{c['from_node']}.{c['from_role']} --> {c['to_frame']}.{c['to_node']}.{c['to_role']}"
+                f"    {c['from_node']}.{c['from_role']} --> {c['to_node']}.{c['to_role']}"
             )
     print()
 
@@ -457,48 +420,84 @@ def load_role_config(role_config_path=None):
 # endregion
 
 
+# region _copy_iac_assets()
+# Copy IaC assets such as the Vagrantfile as well as
+# provisioning scripts when paired with .
+def _copy_iac_assets(output_env_path, include_scripts=False):
+    assets_src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+    items = ["Vagrantfile"]
+    if include_scripts:
+        items.append("scripts/")
+    for item in items:
+        src = os.path.join(assets_src, item)
+        dst = os.path.join(output_env_path, item)
+        if os.path.isdir(src):
+            shutil.copytree(src, dst, dirs_exist_ok=True)
+            print(f"Copied directory: {dst}")
+        elif os.path.isfile(src):
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.copy2(src, dst)
+            print(f"Copied file: {dst}")
+
+
+# region copy_assets()
+# Copy assets such as static files and custom roles, as well as unconditional assets.
+def copy_assets(present_roles, role_config, output_env_path):
+    assets_src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+
+    # Always copy Vagrantfile + provisioning scripts
+    _copy_iac_assets(output_env_path, include_scripts=True)
+
+    # Copy custom role directories
+    for role in present_roles:
+        role_dir_name = role_config.get(role, {}).get("fqcn", role)
+        src = os.path.join(assets_src, "ansible", "roles", role_dir_name)
+        if os.path.isdir(src):
+            dst = os.path.join(output_env_path, "ansible", "roles", role_dir_name)
+            shutil.copytree(src, dst, dirs_exist_ok=True)
+            print(f"Copied role: {dst}")
+
+    # Copy role-triggered assets
+    for role in present_roles:
+        for filename in role_config.get(role, {}).get("assets", []):
+            src = os.path.join(assets_src, filename)
+            dst = os.path.join(output_env_path, filename)
+            if os.path.isfile(src):
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                shutil.copy2(src, dst)
+                print(f"Copied asset: {dst}")
+            else:
+                print(
+                    warn(
+                        f"Warning: asset '{filename}' declared for role '{role}' not found at {src}"
+                    )
+                )
+
+
+# endregion
+
+
 # region validate_diagrams()
 # Cross-validates the parsed nwdiag and uml data to ensure they are in sync.
 # Every host in the deployment diagram must exist in the network diagram and
 # vice versa. Exits with a list of all mismatches found rather than stopping
 # at the first one.
-def validate_diagrams(networks, frames, routers):
+def validate_diagrams(networks, nodes):
     errors = []
 
     nwdiag_hosts = {
         hostname for net_data in networks.values() for hostname in net_data["hosts"]
     }
-    uml_hosts = {
-        node_data["label"]
-        for frame_data in frames.values()
-        for node_data in frame_data["nodes"].values()
-    }
-    router_labels = {router_data["label"] for router_data in routers.values()}
+    uml_hosts = {node_data["label"] for node_data in nodes.values()}
 
-    # Regular host cross-check (routers excluded).
     for hostname in sorted(uml_hosts - nwdiag_hosts):
         errors.append(
             f"  Host '{hostname}' is in the deployment diagram but not in the network diagram."
         )
-
-    for hostname in sorted((nwdiag_hosts - router_labels) - uml_hosts):
+    for hostname in sorted(nwdiag_hosts - uml_hosts):
         errors.append(
             f"  Host '{hostname}' is in the network diagram but not in the deployment diagram."
         )
-
-    # Router cross-check: every router in the network diagram must have a
-    # corresponding <<router>> node in the deployment diagram and vice versa.
-    for router_id, router_data in sorted(routers.items()):
-        if router_data["label"] not in nwdiag_hosts:
-            errors.append(
-                f"  Router '{router_data['label']}' is in the deployment diagram but not in the network diagram."
-            )
-
-    for label in sorted(router_labels - nwdiag_hosts):
-        if label not in uml_hosts:
-            errors.append(
-                f"  Router '{label}' is in the network diagram but has no <<router>> node in the deployment diagram."
-            )
 
     if errors:
         print(err("Error: diagrams are out of sync:"), file=sys.stderr)
@@ -573,10 +572,10 @@ def topological_sort(hosts, host_deps):
 
 
 # region build_playbook()
-# Builds a playbook based on the deployment diagram frames and the
+# Builds a playbook based on the deployment diagram nodes(/hosts) and the
 # role configuration. Inter-host ordering is determined by depends_on (via
 # topological sort); intra-host role ordering is determined by priority.
-def build_playbook(frames, role_config, host_roles):
+def build_playbook(role_config, host_roles):
 
     DEFAULT_PRIORITY = 100
 
@@ -701,13 +700,6 @@ def build_host_vars(host_roles, role_config, networks):
                 }
             )
 
-    # Collect grafana_dashboard entries from all roles present in the diagram.
-    grafana_dashboards = [
-        role_config[role]["grafana_dashboard"]
-        for role in sorted(role_hosts)
-        if role in role_config and "grafana_dashboard" in role_config[role]
-    ]
-
     def resolve_sentinel(value, hostname):
         match value:
             case "__DIAGRAM_BIND_ZONES__":
@@ -716,8 +708,6 @@ def build_host_vars(host_roles, role_config, networks):
                 return dns_server_ips
             case "__DIAGRAM_SCRAPE_CONFIGS__":
                 return scrape_configs
-            case "__DIAGRAM_GRAFANA_DASHBOARDS__":
-                return grafana_dashboards
             case _:
                 return value  # unknown sentinel — pass through as-is
 
@@ -734,10 +724,23 @@ def build_host_vars(host_roles, role_config, networks):
             roles,
             key=lambda r: role_config.get(r, {}).get("priority", DEFAULT_PRIORITY),
         )
-        merged = {}
+
+        merged = {
+            "rhbase_install_packages": list(BASE_PACKAGES),
+        }
+
         for role in sorted_roles:
             raw = role_config.get(role, {}).get("host_vars", {})
-            merged.update(resolve_host_vars(raw, hostname))
+            resolved = resolve_host_vars(raw, hostname)
+
+            for key, value in resolved.items():
+                if key == "rhbase_install_packages":
+                    merged.setdefault(key, [])
+                    merged[key].extend(value)
+                    merged[key] = sorted(set(merged[key]))
+                else:
+                    merged[key] = value
+
         if merged:
             result[hostname] = merged
 
@@ -776,7 +779,7 @@ def build_requirements(host_roles, role_config):
 # region convert_nwdiag()
 # Handles network diagrams (@startnwdiag). Renders the Ansible inventory and
 # Vagrant hosts file from the already-parsed network data.
-def convert_nwdiag(diagram_name, networks):
+def convert_nwdiag(diagram_name, networks, include_control=False):
     if not networks:
         print(
             err("Error: no networks found in diagram. Is it a valid nwdiag file?"),
@@ -827,30 +830,41 @@ def convert_nwdiag(diagram_name, networks):
                         all_hosts[hostname]["ips"].append(ip)
                         all_hosts[hostname]["netmasks"].append(netmask)
 
-    render_context = {
-        "ansible/inventory.yml.j2": {"networks": networks},
-        "vagrant-hosts.yml.j2": {"networks": networks, "all_hosts": all_hosts},
-    }
+    template = env.get_template("vagrant-hosts.yml.j2")
+    output_path = os.path.join(output_env_path, "vagrant-hosts.yml")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, "w") as f:
+        f.write(
+            template.render(
+                networks=networks, all_hosts=all_hosts, include_control=include_control
+            )
+        )
+    print(f'Generated "{output_path}"')
 
-    for template_name, output_relative_path in TEMPLATES:
-        template = env.get_template(template_name)
-        output_path = os.path.join(output_env_path, output_relative_path)
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        with open(output_path, "w") as f:
-            f.write(template.render(**render_context[template_name]))
-        print(f'Generated "{output_path}"')
+    _copy_iac_assets(output_env_path, include_scripts=False)
 
 
 # endregion
 
 
 # region convert_uml()
-# Handles deployment diagrams (@startuml). Renders host_vars, site.yml and
-# routing.yml from the parsed deployment diagram and network data.
-def convert_uml(diagram_name, networks, frames, routers, connections, role_config):
-    if not frames:
+# Handles deployment diagrams (@startuml). Renders inventory.yml, requirements.yml,
+# site.yml and host_vars from the parsed deployment diagram and network data.
+def convert_uml(diagram_name, networks, nodes, connections, role_config):
+    if len(networks) > 1:
         print(
-            err("Error: no frames found in diagram. Is it a valid deployment diagram?"),
+            err(
+                "Error: deployment diagram conversion only supports a single network. "
+                "to generate a multi-network Vagrant environment, run without"
+                "a deployment diagram."
+            ),
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    if not nodes:
+        print(
+            err("Error: no nodes found in diagram. Is it a valid deployment diagram?"),
             file=sys.stderr,
         )
         sys.exit(1)
@@ -863,7 +877,7 @@ def convert_uml(diagram_name, networks, frames, routers, connections, role_confi
         )
         diagram_name = "unnamed"
 
-    debug_print_uml(diagram_name, frames, routers, connections)
+    debug_print_uml(diagram_name, nodes, connections)
 
     output_env_path = os.path.join("output", diagram_name)
 
@@ -885,7 +899,7 @@ def convert_uml(diagram_name, networks, frames, routers, connections, role_confi
     validate_templates(
         env,
         [
-            "ansible/routing.yml.j2",
+            "ansible/inventory.yml.j2",
             "ansible/requirements.yml.j2",
             "ansible/site.yml.j2",
             "ansible/host_vars/hostname.yml.j2",
@@ -897,20 +911,17 @@ def convert_uml(diagram_name, networks, frames, routers, connections, role_confi
     # Build host_roles once here — shared input for both build_playbook()
     # and build_host_vars() to avoid duplicating the derivation logic.
     host_roles = {
-        node_data["label"]: node_data["roles"]
-        for frame_data in frames.values()
-        for node_data in frame_data["nodes"].values()
+        node_data["label"]: node_data["roles"] for node_data in nodes.values()
     }
 
-    if routers:
-        template = env.get_template("ansible/routing.yml.j2")
-        output_path = os.path.join(output_env_path, "ansible/routing.yml")
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        with open(output_path, "w") as f:
-            f.write(template.render(routers=routers))
-        print(f'Generated "{output_path}"')
+    template = env.get_template("ansible/inventory.yml.j2")
+    output_path = os.path.join(output_env_path, "ansible/inventory.yml")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, "w") as f:
+        f.write(template.render(networks=networks))
+    print(f'Generated "{output_path}"')
 
-    playbook = build_playbook(frames, roles, host_roles)
+    playbook = build_playbook(roles, host_roles)
 
     template = env.get_template("ansible/site.yml.j2")
     output_path = os.path.join(output_env_path, "ansible/site.yml")
@@ -939,6 +950,9 @@ def convert_uml(diagram_name, networks, frames, routers, connections, role_confi
     with open(output_path, "w") as f:
         f.write(template.render(**requirements))
     print(f'Generated "{output_path}"')
+
+    present_roles = {role for roles in host_roles.values() for role in roles}
+    copy_assets(present_roles, roles, output_env_path)
 
 
 # endregion
@@ -986,9 +1000,9 @@ def convert(nwdiag_path, uml_path=None, role_config_path=None):
             )
             sys.exit(1)
 
-        uml_diagram_name, frames, routers, connections = parse_uml(uml_text)
-        validate_diagrams(networks, frames, routers)
-        convert_uml(diagram_name, networks, frames, routers, connections, role_config)
+        uml_diagram_name, nodes, connections = parse_uml(uml_text)
+        validate_diagrams(networks, nodes)
+        convert_uml(diagram_name, networks, nodes, connections, role_config)
 
 
 # endregion

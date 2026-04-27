@@ -22,7 +22,6 @@ roles:
     priority: 10
     galaxy_roles:
       - bertvv.bind
-    packages: []
     host_vars:
       bind_zones: __DIAGRAM_BIND_ZONES__
 
@@ -31,7 +30,6 @@ roles:
     priority: 20
     depends_on:
       - dns_server
-    packages: []
     host_vars:
       dns_servers: __DIAGRAM_DNS_SERVER_IPS__
 
@@ -40,56 +38,49 @@ roles:
     priority: 10
     galaxy_roles:
       - bertvv.httpd
-    packages:
-      - httpd
-      - mariadb-server
-      - php-fpm
-      - php-mysqlnd
-      - python3-PyMySQL
+    assets:
+      - ansible/files/db.sql
+      - ansible/files/test.php
+    host_vars:
+      rhbase_install_packages:
+        - httpd
+        - mariadb-server
+        - php-fpm
+        - php-mysqlnd
+        - python3-PyMySQL
 
-  prometheus:
-    fqcn: prometheus.prometheus.prometheus
+  monitoring_server:
+    fqcn: role_monitoring_server
     priority: 20
     galaxy_collections:
       - prometheus.prometheus
-    packages: []
-    host_vars:
-      prometheus_scrape_configs: __DIAGRAM_SCRAPE_CONFIGS__
-
-  grafana:
-    fqcn: grafana.grafana.grafana # role from the grafana.grafana collection
-    priority: 30
-    depends_on:
-      - prometheus
-    galaxy_collections:
       - grafana.grafana
-    packages: []
     host_vars:
-      grafana_security:
-        admin_user: admin
-        admin_password: root
+      grafana_alerting: {}
       grafana_datasources:
         - name: prometheus
           type: prometheus
           access: proxy
           url: "http://localhost:9090"
           basicAuth: false
-      grafana_dashboards: __DIAGRAM_GRAFANA_DASHBOARDS__
-      grafana_alerting: {}
+      grafana_security:
+        admin_user: admin
+        admin_password: root
+      prometheus_scrape_configs: __DIAGRAM_SCRAPE_CONFIGS__
+      rhbase_firewall_allow_ports:
+        - 53/tcp
+        - 53/udp
+        - 3000/tcp
 
   node_exporter:
     fqcn: prometheus.prometheus.node_exporter
     priority: 50
     galaxy_collections:
       - prometheus.prometheus
-    packages: []
+    assets:
+      - ansible/files/grafana_dashboards/node_exporter.json
     host_vars:
       node_exporter_port: 9100
-    grafana_dashboard:
-      dashboard_id: 1860
-      revision_id: 42
-      folder: "Node Exporter"
-      datasource: prometheus
 
   bind_exporter:
     fqcn: prometheus.prometheus.bind_exporter # role from the prometheus.prometheus collection
@@ -98,14 +89,10 @@ roles:
       - dns_server
     galaxy_collections:
       - prometheus.prometheus
-    packages: []
+    assets:
+      - ansible/files/grafana_dashboards/bind_exporter.json
     host_vars:
       bind_exporter_port: 9119
-    grafana_dashboard:
-      dashboard_id: 12172
-      revision_id: 6
-      folder: "Bind9"
-      datasource: prometheus
 
   mysqld_exporter:
     fqcn: prometheus.prometheus.mysqld_exporter # role from the prometheus.prometheus collection
@@ -116,12 +103,9 @@ roles:
         # Remove or adjust this dependency if targeting a standalone database host.
     galaxy_collections:
       - prometheus.prometheus
-    packages:
-      - python3-PyMySQL
+    assets:
+      - ansible/files/grafana_dashboards/mysqld_exporter.json
     host_vars:
+      rhbase_install_packages:
+        - python3-PyMySQL
       mysqld_exporter_port: 9104
-    grafana_dashboard:
-      dashboard_id: 14057
-      revision_id: 1
-      folder: "MySQL"
-      datasource: prometheus

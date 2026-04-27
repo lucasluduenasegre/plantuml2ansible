@@ -4,8 +4,6 @@
 bind_exporter_port: 9119
 bind_zones:
   - hosts:
-      - ip: 172.26.0.254
-        name: central-router
       - ip: 172.26.0.20
         name: dns
       - ip: 172.26.0.30
@@ -15,12 +13,15 @@ bind_zones:
     name: alpha
     networks:
       - 172.26.0.0
-  - hosts:
-      - ip: 172.26.10.254
-        name: central-router
-    name: beta
-    networks:
-      - 172.26.10.0
 dns_servers:
   - 172.26.0.20
 node_exporter_port: 9100
+rhbase_install_packages:
+  - bash-completion
+  - bind-utils
+  - git
+  - nano
+  - setroubleshoot-server
+  - tree
+  - vim-enhanced
+  - wget

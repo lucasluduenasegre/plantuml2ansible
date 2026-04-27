@@ -5,7 +5,8 @@ rhbase_firewall_allow_ports:
   - 80/tcp
   - 443/tcp
   - 9100/tcp # Node Exporter
-  - 9104/tcp # MySQL Server Exporter
+  - 9104/tcp # MySQL Exporter
+  - 9117/tcp # Apache Exporter
 
 rhbase_install_packages:
   - bash-completion
@@ -22,9 +23,9 @@ rhbase_install_packages:
   - vim-enhanced
   - wget
 
-rhbase_start_services:
-  - httpd
-  - mariadb
+# rhbase_start_services:
+#   - httpd
+#   - mariadb
 
 rhbase_selinux_booleans:
   - httpd_can_network_connect
