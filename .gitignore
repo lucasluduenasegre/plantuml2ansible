@@ -31,8 +31,10 @@ test/bats/
 # Node.js build directory
 node_modules/
 
-# Webserver secrets
+# Converter output
+output/
 
+# Webserver secrets
 */ansible/files/*.crt
 */ansible/files/*.key
 
@@ -42,7 +44,3 @@ env/
 ENV/
 .env/
 .venv/
-
-# Converter output
-
-converter/output/*

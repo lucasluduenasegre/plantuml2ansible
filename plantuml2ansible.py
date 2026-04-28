@@ -57,18 +57,6 @@ BASE_PACKAGES = [
     "vim-enhanced",
     "wget",
 ]
-
-# The environment subnet all networks in the diagram must fall within.
-# This is checked during parsing to catch misconfigured addresses early.
-ENVIRONMENT_SUBNET = ipaddress.IPv4Network("172.26.0.0/16")
-
-# Each entry maps a Jinja2 template (relative to templates/) to its output
-# path (relative to the environment output directory). Adding a new file to
-# the converter means adding one line here and one entry in render_context
-# inside convert().
-TEMPLATES = [
-    ("vagrant-hosts.yml.j2", "vagrant-hosts.yml"),
-]
 # endregion
 
 
@@ -437,7 +425,7 @@ def _copy_iac_assets(output_env_path, include_scripts=False):
         elif os.path.isfile(src):
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             shutil.copy2(src, dst)
-            print(f"Copied file: {dst}")
+            print(f"Copied asset: {dst}")
 
 
 # region copy_assets()
@@ -570,6 +558,21 @@ def topological_sort(hosts, host_deps):
 
 # endregion
 
+
+# region _connections_to_host_deps()
+# Derive inter-host ordering hints from UML connections.
+# nodeA.roleX --> nodeB.roleY means nodeA must come after nodeB.
+# Returns a dict: {hostname -> set of hostnames it must follow}.
+def _connections_to_host_deps(connections, nodes):
+    label = {node_id: data["label"] for node_id, data in nodes.items()}
+    deps = {}
+    for c in connections:
+        from_host = label.get(c["from_node"])
+        to_host = label.get(c["to_node"])
+        if from_host and to_host and from_host != to_host:
+            deps.setdefault(from_host, set()).add(to_host)
+    return deps
+# endregion
 
 # region build_playbook()
 # Builds a playbook based on the deployment diagram nodes(/hosts) and the
@@ -776,6 +779,32 @@ def build_requirements(host_roles, role_config):
 # endregion
 
 
+# region get_control_ip()
+# Returns the IP address for the control node, depending on the network
+# defined in the network diagram (broadcast address - 2).
+def get_control_ip(cidr: str, existing_ips: set[str]) -> tuple[str, str]:
+    net = ipaddress.ip_network(cidr, strict=False)
+    if net.num_addresses < 8:
+        print(
+            err(
+                f"Network {net} is too small (/{net.prefixlen}) to safely assign a control node IP. "
+                f"Use a prefix of /29 or larger."
+            ),
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    control_ip = net.broadcast_address - 2
+    if str(control_ip) in existing_ips:
+        print(
+            err(
+                f"Control node IP {control_ip} conflicts with an existing host in the diagram."
+            ),
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return str(control_ip), str(net.netmask)
+
+
 # region convert_nwdiag()
 # Handles network diagrams (@startnwdiag). Renders the Ansible inventory and
 # Vagrant hosts file from the already-parsed network data.
@@ -830,16 +859,30 @@ def convert_nwdiag(diagram_name, networks, include_control=False):
                         all_hosts[hostname]["ips"].append(ip)
                         all_hosts[hostname]["netmasks"].append(netmask)
 
+    # Derive CIDR from the first network. Since this PoC only generates
+    # playbooks for environments with one network, this
+    first_net = next(iter(networks.values()))
+    cidr = f"{first_net['subnet']}/{first_net['netmask']}"
+
+    existing_ips = {ip for host_data in all_hosts.values() for ip in host_data["ips"]}
+    control_ip, control_netmask = (
+        get_control_ip(cidr, existing_ips) if include_control else (None, None)
+    )
+
     template = env.get_template("vagrant-hosts.yml.j2")
     output_path = os.path.join(output_env_path, "vagrant-hosts.yml")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as f:
         f.write(
             template.render(
-                networks=networks, all_hosts=all_hosts, include_control=include_control
+                networks=networks,
+                all_hosts=all_hosts,
+                include_control=include_control,
+                control_ip=control_ip,  # None when include_control=False
+                control_netmask=control_netmask,
             )
         )
-    print(f'Generated "{output_path}"')
+    print(f'Generated {output_path}')
 
     _copy_iac_assets(output_env_path, include_scripts=False)
 
@@ -919,7 +962,7 @@ def convert_uml(diagram_name, networks, nodes, connections, role_config):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as f:
         f.write(template.render(networks=networks))
-    print(f'Generated "{output_path}"')
+    print(f'Generated {output_path}')
 
     playbook = build_playbook(roles, host_roles)
 
@@ -928,7 +971,7 @@ def convert_uml(diagram_name, networks, nodes, connections, role_config):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as f:
         f.write(template.render(playbook=playbook))
-    print(f'Generated "{output_path}"')
+    print(f'Generated {output_path}')
 
     host_vars = build_host_vars(host_roles, roles, networks)
 
@@ -940,7 +983,7 @@ def convert_uml(diagram_name, networks, nodes, connections, role_config):
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         with open(output_path, "w") as f:
             f.write(template.render(hostname=hostname, host_vars=vars_dict))
-        print(f'Generated "{output_path}"')
+        print(f'Generated {output_path}')
 
     requirements = build_requirements(host_roles, roles)
 
@@ -949,7 +992,7 @@ def convert_uml(diagram_name, networks, nodes, connections, role_config):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as f:
         f.write(template.render(**requirements))
-    print(f'Generated "{output_path}"')
+    print(f'Generated {output_path}')
 
     present_roles = {role for roles in host_roles.values() for role in roles}
     copy_assets(present_roles, roles, output_env_path)
@@ -982,7 +1025,7 @@ def convert(nwdiag_path, uml_path=None, role_config_path=None):
         sys.exit(1)
 
     diagram_name, networks = parse_nwdiag(nwdiag_text)
-    convert_nwdiag(diagram_name, networks)
+    convert_nwdiag(diagram_name, networks, include_control=uml_path is not None)
 
     if uml_path is not None:
         if not os.path.isfile(uml_path):
