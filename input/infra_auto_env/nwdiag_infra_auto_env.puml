@@ -1,0 +1,28 @@
+@startnwdiag infra_auto_env
+
+network infra.lan {
+    address = "172.16.0.0/16"
+
+    r001 [address = "172.16.255.254", managed = false]
+    your_laptop [description = "your-laptop", address = "172.16.0.1", managed = false]
+    srv001 [address = "172.16.128.1"]
+    srv002 [address = "172.16.128.2"]
+    srv003 [address = "172.16.128.3"]
+    srv004 [address = "172.16.128.4", cpus = 2, memory = 2048]
+    srv100 [address = "172.16.128.100"]
+    ws0001 [address = "dhcp", managed = false]
+    control [address = "172.16.128.253", managed = false]
+}
+
+network virtualbox_nat {
+    address = "10.0.2.0/24"
+
+    r001 [address = "10.0.2.15", managed = false]
+    virtualbox_nat_gateway [address = "10.0.2.2", managed = false]
+    virtualbox_nat_dns [address = "10.0.2.3", managed = false]
+}
+
+real_internet [shape = cloud]
+virtualbox_nat_gateway -- real_internet
+
+@endnwdiag

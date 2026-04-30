@@ -1,0 +1,61 @@
+@startuml infra_auto_env
+set separator .
+left to right direction
+
+node srv001 {
+    component bind_exporter
+    component dns_client
+    component dns_server
+    component node_exporter
+}
+
+node srv002 {
+    component bind_exporter
+    component dns_client
+    component dns_server
+    component node_exporter
+}
+
+node srv003 {
+    component dhcp_server
+    component dns_client
+    component node_exporter
+}
+
+node srv004 {
+    component dns_client
+    component monitoring_server
+    component node_exporter
+}
+
+node srv100 {
+    component dns_client
+    component mysqld_exporter
+    component node_exporter
+    component web_server
+}
+
+srv001.dns_client -[#teal]-> srv001.dns_server
+srv001.dns_client -[#teal]-> srv002.dns_server
+
+srv002.dns_client -[#teal]-> srv001.dns_server
+srv002.dns_client -[#teal]-> srv002.dns_server
+
+srv003.dns_client -[#teal]-> srv001.dns_server
+srv003.dns_client -[#teal]-> srv002.dns_server
+
+srv004.dns_client -[#teal]-> srv001.dns_server
+srv004.dns_client -[#teal]-> srv002.dns_server
+srv004.monitoring_server -[#orange]-> srv001.bind_exporter
+srv004.monitoring_server -[#orange]-> srv001.node_exporter
+srv004.monitoring_server -[#orange]-> srv002.bind_exporter
+srv004.monitoring_server -[#orange]-> srv002.node_exporter
+srv004.monitoring_server -[#orange]-> srv003.node_exporter
+srv004.monitoring_server -[#orange]-> srv004.node_exporter
+srv004.monitoring_server -[#orange]-> srv100.mysqld_exporter
+srv004.monitoring_server -[#orange]-> srv100.node_exporter
+
+srv100.dns_client -[#teal]-> srv001.dns_server
+srv100.dns_client -[#teal]-> srv002.dns_server
+
+@enduml

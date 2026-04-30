@@ -114,7 +114,7 @@ def parse_nwdiag(puml_text):
     # Patterns compiled once, reused for every line in the loop.
     comment_re = re.compile(r"^\s*(?:'|\/\/).*")
     start_re = re.compile(r'@startnwdiag(?:\s+"?([\w-]+)"?)?')
-    network_re = re.compile(r'network\s+"?([\w-]+)"?\s*\{')
+    network_re = re.compile(r'network\s+"?([\w.-]+)"?\s*\{')
     network_address_re = re.compile(r'address\s*=\s*"?([\d.]+/\d+)"?')
     host_re = re.compile(r"([\w-]+)\s*\[([^\]]+)\]")
     description_re = re.compile(r'description\s*=\s*"?([\w-]+)"?')
@@ -256,15 +256,14 @@ def parse_uml(puml_text):
     component_re = re.compile(r"component\s+(\w+)(?:\s+as\s+\"([^\"]+)\")?")
     close_re = re.compile(r"^\}$")
 
+    role_conn_re = re.compile(r"(\w+)\.(\w+)\s+-(?:[\w]|\[[^\]]*\]|-)*>\s+(\w+)\.(\w+)")
+
     connections = []
     diagram_name = None
     nodes = {}
 
     # Tracks which node body is currently open.
     current_node = None
-
-    # Role-to-role:   node.role --> node.role
-    role_conn_re = re.compile(r"(\w+)\.(\w+)\s+-->\s+(\w+)\.(\w+)")
 
     for line_number, raw_line in enumerate(puml_text.splitlines(), start=1):
         line = comment_re.sub("", raw_line).strip()
@@ -565,21 +564,31 @@ def topological_sort(hosts, host_deps):
 # Returns a dict: {hostname -> set of hostnames it must follow}.
 def _connections_to_host_deps(connections, nodes):
     label = {node_id: data["label"] for node_id, data in nodes.items()}
+    # Map hostname -> set of roles it runs, for the self-sufficiency check.
+    host_roles = {data["label"]: set(data["roles"]) for data in nodes.values()}
     deps = {}
     for c in connections:
         from_host = label.get(c["from_node"])
-        to_host = label.get(c["to_node"])
-        if from_host and to_host and from_host != to_host:
-            deps.setdefault(from_host, set()).add(to_host)
+        to_host   = label.get(c["to_node"])
+        if not from_host or not to_host or from_host == to_host:
+            continue
+        # If the from_host already runs the to_role locally, priority handles
+        # intra-host ordering — no inter-host constraint is needed, and adding
+        # one risks a cycle (e.g. two redundant DNS servers each pointing at each other).
+        if c["to_role"] in host_roles.get(from_host, set()):
+            continue
+        deps.setdefault(from_host, set()).add(to_host)
     return deps
+
+
 # endregion
+
 
 # region build_playbook()
 # Builds a playbook based on the deployment diagram nodes(/hosts) and the
 # role configuration. Inter-host ordering is determined by depends_on (via
 # topological sort); intra-host role ordering is determined by priority.
-def build_playbook(role_config, host_roles):
-
+def build_playbook(role_config, host_roles, extra_host_deps=None):
     DEFAULT_PRIORITY = 100
 
     # Build a flat map of role_identifier -> set of hosts that have it.
@@ -595,9 +604,20 @@ def build_playbook(role_config, host_roles):
         for dep_role in role_data.get("depends_on", []):
             if dep_role in role_hosts and role in role_hosts:
                 for dependent_host in role_hosts[role]:
+                    # If this host already runs the depended-on role,
+                    # priority handles the ordering locally — no inter-host
+                    # dependency needed, and adding one risks a cycle.
+                    if dep_role in host_roles.get(dependent_host, []):
+                        continue
                     for provider_host in role_hosts[dep_role]:
                         if dependent_host != provider_host:
                             host_deps[dependent_host].add(provider_host)
+
+    # Merge diagram-derived ordering hints (from UML --> connections).
+    # These supplement depends_on rather than replacing it.
+    if extra_host_deps:
+        for host, predecessors in extra_host_deps.items():
+            host_deps.setdefault(host, set()).update(predecessors)
 
     ordered_hosts = topological_sort(host_roles.keys(), host_deps)
 
@@ -653,7 +673,7 @@ def _build_bind_zones(hostname, networks):
 # Builds host_vars files for each host based on the role configuration and
 # diagram data. Static host_vars are copied verbatim from role-config.yml;
 # __DIAGRAM_*__ sentinels are resolved from the parsed nwdiag data.
-def build_host_vars(host_roles, role_config, networks):
+def build_host_vars(host_roles, role_config, networks, nodes=None, connections=None):
 
     DEFAULT_PRIORITY = 100
 
@@ -677,15 +697,24 @@ def build_host_vars(host_roles, role_config, networks):
         if h in host_primary_ip
     )
 
-    # Build prometheus scrape configs from all exporter roles in the diagram.
-    # Any role with a host_vars entry ending in _port is treated as an exporter.
+    # Maps (from_host, from_role) -> set of (to_host, to_role).
+    # Built from UML connections so sentinels can be filtered per-host.
+    role_connections = {}
+    if connections and nodes:
+        label = {nid: data["label"] for nid, data in nodes.items()}
+        for c in connections:
+            from_host = label.get(c["from_node"])
+            to_host = label.get(c["to_node"])
+            if from_host and to_host:
+                key = (from_host, c["from_role"])
+                role_connections.setdefault(key, set()).add((to_host, c["to_role"]))
+
     scrape_configs = []
     for role, role_data in role_config.items():
         if role not in role_hosts:
             continue
         port_key = next(
-            (k for k in role_data.get("host_vars", {}) if k.endswith("_port")),
-            None,
+            (k for k in role_data.get("host_vars", {}) if k.endswith("_port")), None
         )
         if port_key is None:
             continue
@@ -697,22 +726,72 @@ def build_host_vars(host_roles, role_config, networks):
         )
         if targets:
             scrape_configs.append(
-                {
-                    "job_name": role,
-                    "static_configs": [{"targets": targets}],
-                }
+                {"job_name": role, "static_configs": [{"targets": targets}]}
             )
 
     def resolve_sentinel(value, hostname):
         match value:
             case "__DIAGRAM_BIND_ZONES__":
                 return _build_bind_zones(hostname, networks)
+
             case "__DIAGRAM_DNS_SERVER_IPS__":
-                return dns_server_ips
+                if role_connections:
+                    # Only return IPs of dns_server hosts that this specific
+                    # host's dns_client has an explicit connection to.
+                    return sorted(
+                        host_primary_ip[to_host]
+                        for (to_host, to_role) in role_connections.get(
+                            (hostname, "dns_client"), set()
+                        )
+                        if to_role == "dns_server" and to_host in host_primary_ip
+                    )
+                return dns_server_ips  # fallback: no connections parsed
+
             case "__DIAGRAM_SCRAPE_CONFIGS__":
-                return scrape_configs
+                # Pre-compute which exporter hosts are reachable from any monitoring host.
+                if role_connections:
+                    monitoring_hosts = role_hosts.get("monitoring_server", set())
+                    configs = []
+                    for role, role_data in role_config.items():
+                        if role not in role_hosts:
+                            continue
+                        port_key = next(
+                            (
+                                k
+                                for k in role_data.get("host_vars", {})
+                                if k.endswith("_port")
+                            ),
+                            None,
+                        )
+                        if port_key is None:
+                            continue
+                        port = role_data["host_vars"][port_key]
+                        targets = sorted(
+                            f"{host_primary_ip[h]}:{port}"
+                            for h in role_hosts[role]
+                            if h in host_primary_ip
+                            # Check that a monitoring host explicitly connects to (h, role) —
+                            # both the host AND the role must match.
+                            and any(
+                                (h, role)
+                                in role_connections.get(
+                                    (mon, "monitoring_server"), set()
+                                )
+                                for mon in monitoring_hosts
+                            )
+                        )
+                        if targets:
+                            configs.append(
+                                {
+                                    "job_name": role,
+                                    "static_configs": [{"targets": targets}],
+                                }
+                            )
+                    return configs
+                return scrape_configs  # fallback: no connections parsed
+
             case _:
-                return value  # unknown sentinel — pass through as-is
+                return value
 
     def resolve_host_vars(raw_vars, hostname):
         return {
@@ -882,7 +961,7 @@ def convert_nwdiag(diagram_name, networks, include_control=False):
                 control_netmask=control_netmask,
             )
         )
-    print(f'Generated {output_path}')
+    print(f"Generated {output_path}")
 
     _copy_iac_assets(output_env_path, include_scripts=False)
 
@@ -962,18 +1041,21 @@ def convert_uml(diagram_name, networks, nodes, connections, role_config):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as f:
         f.write(template.render(networks=networks))
-    print(f'Generated {output_path}')
+    print(f"Generated {output_path}")
 
-    playbook = build_playbook(roles, host_roles)
+    diagram_deps = _connections_to_host_deps(connections, nodes)
+    playbook = build_playbook(roles, host_roles, extra_host_deps=diagram_deps)
 
     template = env.get_template("ansible/site.yml.j2")
     output_path = os.path.join(output_env_path, "ansible/site.yml")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as f:
         f.write(template.render(playbook=playbook))
-    print(f'Generated {output_path}')
+    print(f"Generated {output_path}")
 
-    host_vars = build_host_vars(host_roles, roles, networks)
+    host_vars = build_host_vars(
+        host_roles, roles, networks, nodes=nodes, connections=connections
+    )
 
     template = env.get_template("ansible/host_vars/hostname.yml.j2")
     for hostname, vars_dict in host_vars.items():
@@ -983,7 +1065,7 @@ def convert_uml(diagram_name, networks, nodes, connections, role_config):
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         with open(output_path, "w") as f:
             f.write(template.render(hostname=hostname, host_vars=vars_dict))
-        print(f'Generated {output_path}')
+        print(f"Generated {output_path}")
 
     requirements = build_requirements(host_roles, roles)
 
@@ -992,7 +1074,7 @@ def convert_uml(diagram_name, networks, nodes, connections, role_config):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as f:
         f.write(template.render(**requirements))
-    print(f'Generated {output_path}')
+    print(f"Generated {output_path}")
 
     present_roles = {role for roles in host_roles.values() for role in roles}
     copy_assets(present_roles, roles, output_env_path)
@@ -1025,6 +1107,13 @@ def convert(nwdiag_path, uml_path=None, role_config_path=None):
         sys.exit(1)
 
     diagram_name, networks = parse_nwdiag(nwdiag_text)
+
+    # Remove stale output before writing anything new.
+    output_env_path = os.path.join("output", diagram_name or "unnamed")
+    if os.path.exists(output_env_path):
+        shutil.rmtree(output_env_path)
+        print(warn(f"Warning: removed previous output at '{output_env_path}'"))
+
     convert_nwdiag(diagram_name, networks, include_control=uml_path is not None)
 
     if uml_path is not None:
@@ -1043,7 +1132,7 @@ def convert(nwdiag_path, uml_path=None, role_config_path=None):
             )
             sys.exit(1)
 
-        uml_diagram_name, nodes, connections = parse_uml(uml_text)
+        diagram_name, nodes, connections = parse_uml(uml_text)
         validate_diagrams(networks, nodes)
         convert_uml(diagram_name, networks, nodes, connections, role_config)
 

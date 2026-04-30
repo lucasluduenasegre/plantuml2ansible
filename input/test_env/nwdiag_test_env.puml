@@ -5,7 +5,7 @@
 ' Network definition
 '
 ' Format: network <network_name> { ... }
-network alpha {
+network test.lan {
   ' Subnet definition
   '
   ' Format: address = <network-address>/<prefix-length>
@@ -24,13 +24,4 @@ network alpha {
   web [description = "web", address = "172.26.0.10"]
 }
 
-
-network beta {
-  address = "172.26.10.0/24"
-
-  ' Note: hosts with multiple IP addresses (generally routers) are supported, but
-  ' the maximum is 3 IP addresses (not including the VirtualBox NAT interface)
-  ' due to technical constraints with VirtualBox. Any other unchanged variables
-  ' (like the description or cpu cores) do not have to be redefined.
-}
 @endnwdiag

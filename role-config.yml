@@ -17,14 +17,24 @@
 #                           role's host — consumed by the grafana role only.
 
 roles:
-  dns_server:
-    fqcn: role_dns_server
+  dhcp_server:
+    fqcn: bertvv.dhcp
     priority: 10
+    depends_on:
+      - dns_server
     galaxy_roles:
-      - bertvv.bind
+      - bertvv.dhcp
     host_vars:
-      bind_zones: __DIAGRAM_BIND_ZONES__
-
+      rhbase_firewall_allow_services:
+        - dhcp
+      dhcp_global_default_lease_time: 14400
+      dhcp_global_max_lease_time: 14400
+      dhcp_global_domain_name: __DIAGRAM_NETWORK_NAME__
+      dhcp_global_broadcast_address: __DIAGRAM_BROADCAST__
+      dhcp_global_subnet_mask: __DIAGRAM_NETMASK__
+      dhcp_global_domain_name_servers: __DIAGRAM_DNS_SERVER_IPS__
+      dhcp_global_routers: __DIAGRAM_GATEWAY_IP__
+      dhcp_subnets: __DIAGRAM_SUBNETS__
   dns_client:
     fqcn: role_dns_client
     priority: 20
@@ -33,21 +43,68 @@ roles:
     host_vars:
       dns_servers: __DIAGRAM_DNS_SERVER_IPS__
 
+  dns_server:
+    fqcn: role_dns_server
+    priority: 10
+    galaxy_roles:
+      - bertvv.bind
+    host_vars:
+      rhbase_firewall_allow_ports:
+        - 53/tcp
+        - 53/udp
+      bind_acls:
+        - name: acl1
+          match_list:
+            - 172.16.0.0/16
+      bind_allow_query:
+        - any
+      bind_listen_ipv4:
+        - any
+      bind_dnssec_enable: false
+      bind_dnssec_validation: false
+      bind_forward_only: true
+      bind_forwarders:
+        - 10.0.2.3
+        - 1.1.1.1
+      bind_recursion: true
+      bind_zones: __DIAGRAM_BIND_ZONES__
+
   web_server:
     fqcn: role_web_server
     priority: 10
     galaxy_roles:
       - bertvv.httpd
     assets:
+      - ansible/files/ca.crt
+      - ansible/files/ca.key
       - ansible/files/db.sql
       - ansible/files/test.php
     host_vars:
+      rhbase_firewall_allow_ports:
+        - 80/tcp
+        - 443/tcp
       rhbase_install_packages:
         - httpd
         - mariadb-server
         - php-fpm
         - php-mysqlnd
         - python3-PyMySQL
+      rhbase_repositories:
+        - epel-release
+      rhbase_firewall_allow_services:
+        - http
+        - https
+        - prometheus-node-exporter
+      rhbase_start_services:
+        - httpd
+        - mariadb
+      rhbase_selinux_booleans:
+        - httpd_can_network_connect
+      httpd_ssl_certificate_key_file: "ca.key"
+      httpd_ssl_certificate_file: "ca.crt"
+      db_user: "appuser"
+      db_name: "appdb"
+      db_password: "let me in"
 
   monitoring_server:
     fqcn: role_monitoring_server
@@ -80,6 +137,8 @@ roles:
     assets:
       - ansible/files/grafana_dashboards/node_exporter.json
     host_vars:
+      rhbase_firewall_allow_ports:
+        - 9100/tcp
       node_exporter_port: 9100
 
   bind_exporter:
@@ -92,6 +151,8 @@ roles:
     assets:
       - ansible/files/grafana_dashboards/bind_exporter.json
     host_vars:
+      rhbase_firewall_allow_ports:
+        - 9119/tcp
       bind_exporter_port: 9119
 
   mysqld_exporter:
@@ -106,6 +167,9 @@ roles:
     assets:
       - ansible/files/grafana_dashboards/mysqld_exporter.json
     host_vars:
+      rhbase_firewall_allow_ports:
+        - 9104/tcp
+        - 443/tcp
       rhbase_install_packages:
         - python3-PyMySQL
       mysqld_exporter_port: 9104

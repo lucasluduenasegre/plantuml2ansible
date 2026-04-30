@@ -2,8 +2,7 @@
 ' Specify diagram name above, otherwise falls back on filename for output directory
 ' Note: this name must match with that of the network diagram
 
-' Fix roles being reused over different nodes
-' This line makes sure that objects with the same name (nota)
+' Fixes the same role name being reused over different nodes
 set separator .
 ' Purely visual, shouldn't have an effect on the parser
 left to right direction
@@ -35,27 +34,17 @@ node web as "web" {
     component web_server
 }
 
-' Router definition
-'
-' Note: In the resulting diagram, the router sits topologically outside all frames/networks,
-'       which in practice is not accurate. This is a limitation by PlantUML, as an object
-'       can't be nested under multiple other objects. In reality, the router will in fact
-'       belong to multiple networks.
-'
-' Format: node <router_identifier> <<router>>
-' node central_router <<router>>
-
 ' Role-to-role connections
 '
 ' Format: <network_identifier>.<host_identifier>.<role_identifier> --> <network_identifier>.<host_identifier>.<role_identifier>
 dns.dns_client --> dns.dns_server
 
 monitoring.dns_client --> dns.dns_server
-monitoring.monitoring_server --> dns.node_exporter
 monitoring.monitoring_server --> dns.bind_exporter
+monitoring.monitoring_server --> dns.node_exporter
 monitoring.monitoring_server --> monitoring.node_exporter
-monitoring.monitoring_server --> web.node_exporter
 monitoring.monitoring_server --> web.mysqld_exporter
+monitoring.monitoring_server --> web.node_exporter
 
 web.dns_client --> dns.dns_server
 

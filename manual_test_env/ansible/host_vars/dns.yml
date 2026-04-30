@@ -14,9 +14,9 @@ bind_acls:
     match_list:
       - 172.26.0.0/24
 
-bind_allow_query: ["any"]
+bind_allow_query: [ "any" ]
 
-bind_listen_ipv4: ["any"]
+bind_listen_ipv4: [ "any" ]
 
 bind_dnssec_enable: false
 
@@ -71,4 +71,5 @@ bind_zones:
         ip: "{{ hostvars['web']['ansible_host'] }}"
     networks:
       - "172.26"
+
 # endregion
