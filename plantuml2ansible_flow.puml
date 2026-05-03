@@ -1,0 +1,170 @@
+@startuml plantuml2ansible_flow
+
+skinparam ActivityBackgroundColor #f0f4ff
+skinparam ActivityBorderColor #3a5fc8
+skinparam ActivityDiamondBackgroundColor #fff8e1
+skinparam ActivityDiamondBorderColor #e6a817
+skinparam ArrowColor #3a5fc8
+skinparam NoteBackgroundColor #fffde7
+skinparam NoteBorderColor #ccc
+skinparam FontName Helvetica
+
+title plantuml2ansible.py — Execution Flow
+
+start
+
+:Parse CLI arguments\n(nwdiag_path, uml_path?, --role-config?);
+
+:load_role_config()\nLoad & validate role-config.yml;
+
+if (role-config.yml found\nand valid?) then (no)
+  #salmon:Exit with error;
+  stop
+else (yes)
+endif
+
+if (nwdiag_path exists\non disk?) then (no)
+  #salmon:Exit with error;
+  stop
+else (yes)
+endif
+
+:Read nwdiag file text;
+
+:detect_diagram_type()\nRead first non-comment line;
+
+if (First directive is\n@startnwdiag?) then (no)
+  #salmon:Exit with error\n(wrong diagram type);
+  stop
+else (yes)
+endif
+
+:parse_nwdiag()\nStrip block comments\nParse networks, hosts,\nIPs, CPUs, memory;
+
+if (Parse errors?\n(bad CIDR, bad IP,\nIP outside subnet)) then (yes)
+  #salmon:Exit with error;
+  stop
+else (no)
+endif
+
+:debug_print_nwdiag()\nPrint parsed network summary;
+
+note right
+  Always runs, regardless
+  of whether a UML file
+  was supplied.
+end note
+
+if (Output directory\nalready exists?) then (yes)
+  :Remove stale output directory;
+else (no)
+endif
+
+:convert_nwdiag()\n──────────────────────\nFlatten all_hosts table\nDerive CIDR from first network;
+
+if (uml_path supplied?\n(include_control flag)) then (yes)
+  :get_control_ip()\nAssign broadcast-2 address\nto control node;
+  if (Network too small\nor IP conflicts?) then (yes)
+    #salmon:Exit with error;
+    stop
+  else (no)
+  endif
+else (no)
+  :control_ip = None;
+endif
+
+:validate_templates()\nCheck inventory.yml.j2 and\nvagrant-hosts.yml.j2 exist;
+
+if (Missing templates?) then (yes)
+  #salmon:Exit with error;
+  stop
+else (no)
+endif
+
+:Render vagrant-hosts.yml\nvia Jinja2 template;
+
+:_copy_iac_assets()\nCopy Vagrantfile\n(no scripts yet);
+
+if (uml_path argument\nwas supplied?) then (no)
+  #palegreen:Done —\nnwdiag-only output;
+  stop
+else (yes)
+endif
+
+'=== UML branch ===
+
+if (uml_path exists\non disk?) then (no)
+  #salmon:Exit with error;
+  stop
+else (yes)
+endif
+
+:Read UML file text;
+
+:detect_diagram_type()\nRead first non-comment line;
+
+if (First directive is\n@startuml?) then (no)
+  #salmon:Exit with error\n(wrong diagram type);
+  stop
+else (yes)
+endif
+
+:parse_uml()\nStrip block comments\nParse nodes, roles,\nrole-to-role connections;
+
+if (Diagram name mismatch\nbetween nwdiag and uml?) then (yes)
+  :Print warning\n(use nwdiag name);
+else (no)
+endif
+
+:validate_diagrams()\nCross-check hosts between\nboth diagrams;
+
+if (Hosts out of sync?) then (yes)
+  #salmon:Exit with error\n(list all mismatches);
+  stop
+else (no)
+endif
+
+:debug_print_uml()\nPrint parsed node and\nconnection summary;
+
+:convert_uml()\n──────────────────────;
+
+if (More than one network?) then (yes)
+  #salmon:Exit with error\n(multi-network not supported\nwith deployment diagram);
+  stop
+else (no)
+endif
+
+:validate_templates()\nCheck all four UML templates;
+
+if (Missing templates?) then (yes)
+  #salmon:Exit with error;
+  stop
+else (no)
+endif
+
+:Derive host_roles map\n{hostname -> [role, ...]};
+
+fork
+  :Render ansible/inventory.yml;
+fork again
+  :_connections_to_host_deps()\nDerive ordering hints\nfrom UML arrows\n(skip peer-role cycles);
+
+  :build_playbook()\n─────────────────────\nBuild role_hosts map\nApply depends_on constraints\nMerge diagram arrow deps\n_topological_sort() hosts\nSort roles by priority\nAssemble playbook list;
+
+  :Render ansible/site.yml;
+fork again
+  :build_host_vars()\n─────────────────────\nResolve __DIAGRAM_*__\nsentinels per host\nMerge list-type keys\nOverride scalar keys\nby priority;
+
+  :Render ansible/host_vars/\n<hostname>.yml\n(one file per host);
+fork again
+  :build_requirements()\nCollect galaxy_roles\nand galaxy_collections\nfrom all present roles\n(+ bertvv.rh-base always);
+
+  :Render ansible/requirements.yml;
+end fork
+
+:copy_assets()\n─────────────────────\n_copy_iac_assets()\n(Vagrantfile + scripts)\nCopy custom role dirs\nCopy role-triggered\nstatic assets;
+
+#palegreen:Done —\nFull nwdiag + UML output;
+stop
+
+@enduml

@@ -1,6 +1,6 @@
 @startnwdiag test_env
-' Specify diagram name above, otherwise falls back on filename for output directory
-' Note: this name must match with that of the deployment diagram
+' Specify diagram name above, otherwise falls back on filename for output directory.
+' Note: this name must match with that of the deployment diagram.
 
 ' Network definition
 '
@@ -17,11 +17,26 @@ network test.lan {
   ' - By default the <description> attribute will be used as the resulting hostname;
   '   <host_identifier> is the fallback if <description> is unused.
   ' - Underscores in the hostname will be converted to hyphens, due to Unix conventions
+  ' - Hosts with the "managed = false" flag will be rendered by PlantUML, but ignored
+  '   by the converter.
   '
-  ' Format: <host_identifier> [description = <description> address = <ipv4_address>, cpus = <amt_cores>, memory = <amt_gb_ram>, box="<base_box>", managed = <true|false>]
+  ' Format: <host_identifier> [description = <description> address = <ipv4_address>, cpus = <amt_cores>, memory = <amt_gb_ram>, managed = <true|false>]
   dns [description = "dns", address = "172.26.0.20"]
   monitoring [description = "monitoring", address = "172.26.0.30", cpus = 2, memory = 2048]
   web [description = "web", address = "172.26.0.10"]
 }
+
+network virtualbox_nat {
+  address = "10.0.2.0/24"
+
+  dns [address = "10.0.2.15", managed = false]
+  monitoring [address = "10.0.2.15", managed = false]
+  web [address = "10.0.2.15", managed = false]
+  virtualbox_nat_gateway [address = "10.0.2.2", managed = false]
+  virtualbox_nat_dns [address = "10.0.2.3", managed = false]
+}
+
+real_internet [shape = cloud]
+virtualbox_nat_gateway -- real_internet
 
 @endnwdiag

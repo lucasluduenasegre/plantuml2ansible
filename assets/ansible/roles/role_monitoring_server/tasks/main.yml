@@ -9,6 +9,12 @@
   loop_control:
     loop_var: roles
 
+- name: Copy Grafana provisioning config file
+  ansible.builtin.copy:
+    src: /vagrant/ansible/files/grafana/default.yml
+    dest: /etc/grafana/provisioning/dashboards/default.yml
+  register: result
+
 - name: Copy Grafana dashboard JSON files
   ansible.builtin.copy:
     src: "{{ item }}"
@@ -17,7 +23,7 @@
     group: grafana
     mode: '0644'
   with_fileglob:
-    - "files/grafana_dashboards/*.json"
+    - "files/grafana/dashboards/*.json"
 
 - name: Restart grafana-server
   ansible.builtin.service:

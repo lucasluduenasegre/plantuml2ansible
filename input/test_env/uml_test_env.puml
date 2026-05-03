@@ -17,7 +17,7 @@ node dns as "dns" {
     ' Format: component <role_identifier> as <role_name>
     component bind_exporter
     component dns_client
-    component dns_server
+    component dns_server_primary
     component node_exporter
 }
 
@@ -37,15 +37,15 @@ node web as "web" {
 ' Role-to-role connections
 '
 ' Format: <network_identifier>.<host_identifier>.<role_identifier> --> <network_identifier>.<host_identifier>.<role_identifier>
-dns.dns_client --> dns.dns_server
+dns.dns_client --> dns.dns_server_primary
 
-monitoring.dns_client --> dns.dns_server
+monitoring.dns_client --> dns.dns_server_primary
 monitoring.monitoring_server --> dns.bind_exporter
 monitoring.monitoring_server --> dns.node_exporter
 monitoring.monitoring_server --> monitoring.node_exporter
 monitoring.monitoring_server --> web.mysqld_exporter
 monitoring.monitoring_server --> web.node_exporter
 
-web.dns_client --> dns.dns_server
+web.dns_client --> dns.dns_server_primary
 
 @enduml

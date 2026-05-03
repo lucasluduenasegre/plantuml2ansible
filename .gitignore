@@ -44,3 +44,6 @@ env/
 ENV/
 .env/
 .venv/
+
+# Manual test environment
+manual_test_env/*

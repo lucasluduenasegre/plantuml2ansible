@@ -17,11 +17,13 @@
 #                           role's host — consumed by the grafana role only.
 
 roles:
+  # region dhcp_server
   dhcp_server:
     fqcn: bertvv.dhcp
     priority: 10
     depends_on:
-      - dns_server
+      - dns_server_primary
+      - dns_server_secondary
     galaxy_roles:
       - bertvv.dhcp
     host_vars:
@@ -33,25 +35,21 @@ roles:
       dhcp_global_broadcast_address: __DIAGRAM_BROADCAST__
       dhcp_global_subnet_mask: __DIAGRAM_NETMASK__
       dhcp_global_domain_name_servers: __DIAGRAM_DNS_SERVER_IPS__
-      dhcp_global_routers: __DIAGRAM_GATEWAY_IP__
       dhcp_subnets: __DIAGRAM_SUBNETS__
-  dns_client:
-    fqcn: role_dns_client
-    priority: 20
-    depends_on:
-      - dns_server
-    host_vars:
-      dns_servers: __DIAGRAM_DNS_SERVER_IPS__
+  # endregion
 
-  dns_server:
+  # region dns_server_primary
+  dns_server_primary:
     fqcn: role_dns_server
     priority: 10
     galaxy_roles:
       - bertvv.bind
     host_vars:
+      rhbase_firewall_allow_services:
+        - dns
+        - prometheus-node-exporter
       rhbase_firewall_allow_ports:
-        - 53/tcp
-        - 53/udp
+        - 9119/tcp
       bind_acls:
         - name: acl1
           match_list:
@@ -67,8 +65,41 @@ roles:
         - 10.0.2.3
         - 1.1.1.1
       bind_recursion: true
-      bind_zones: __DIAGRAM_BIND_ZONES__
+      bind_allow_transfer: __DIAGRAM_DNS_SECONDARY_IPS__
+      bind_zones: __DIAGRAM_BIND_ZONES_PRIMARY__
+  # endregion
 
+  # region dns_server_secondary
+  dns_server_secondary:
+    fqcn: role_dns_server # Same as dns_server_primary, as it's virtually the same role with just different host_vars
+    priority: 10
+    galaxy_roles:
+      - bertvv.bind
+    host_vars:
+      rhbase_firewall_allow_services:
+        - dns
+        - prometheus-node-exporter
+      rhbase_firewall_allow_ports:
+        - 9119/tcp
+      bind_acls:
+        - name: acl1
+          match_list:
+            - 172.16.0.0/16
+      bind_allow_query:
+        - any
+      bind_listen_ipv4:
+        - any
+      bind_dnssec_enable: false
+      bind_dnssec_validation: false
+      bind_forward_only: true
+      bind_forwarders:
+        - 10.0.2.3
+        - 1.1.1.1
+      bind_recursion: true
+      bind_zones: __DIAGRAM_BIND_ZONES_SECONDARY__
+  # endregion
+
+  # region web_server
   web_server:
     fqcn: role_web_server
     priority: 10
@@ -91,10 +122,6 @@ roles:
         - python3-PyMySQL
       rhbase_repositories:
         - epel-release
-      rhbase_firewall_allow_services:
-        - http
-        - https
-        - prometheus-node-exporter
       rhbase_start_services:
         - httpd
         - mariadb
@@ -105,21 +132,41 @@ roles:
       db_user: "appuser"
       db_name: "appdb"
       db_password: "let me in"
+  # endregion
 
+  # region dns_client
+  dns_client:
+    fqcn: role_dns_client
+    priority: 20
+    depends_on:
+      - dns_server_primary
+      - dns_server_secondary
+    host_vars:
+      dns_servers: __DIAGRAM_DNS_SERVER_IPS__
+  # endregion
+
+  # region monitoring_server
   monitoring_server:
     fqcn: role_monitoring_server
     priority: 20
+    depends_on:
+      - dns_server_primary
+      - dns_server_secondary
     galaxy_collections:
       - prometheus.prometheus
       - grafana.grafana
+    assets:
+      - ansible/files/grafana/default.yml
     host_vars:
       grafana_alerting: {}
+      grafana_dashboards_dir: /var/lib/grafana/dashboards
       grafana_datasources:
         - name: prometheus
           type: prometheus
           access: proxy
           url: "http://localhost:9090"
           basicAuth: false
+      grafana_provisioning_synced: true
       grafana_security:
         admin_user: admin
         admin_password: root
@@ -128,48 +175,77 @@ roles:
         - 53/tcp
         - 53/udp
         - 3000/tcp
+  # endregion
 
+  # region apache_exporter
+  apache_exporter:
+    fqcn: prometheus.prometheus.apache_exporter
+    priority: 50
+    galaxy_collections:
+      - prometheus.prometheus
+    assets:
+      - ansible/files/grafana/dashboards/apache_exporter.json
+    host_vars:
+      rhbase_firewall_allow_ports:
+        - 9117/tcp
+      apache_exporter_port: 9117
+      apache_exporter_uri: "http://localhost/server-status/?auto"
+      apache_exporter_web_listen_address: "0.0.0.0:9117"
+      httpd_status_enable: true
+
+  # endregion
+
+  # region bind_exporter
+  bind_exporter:
+    fqcn: prometheus.prometheus.bind_exporter
+    priority: 50
+    galaxy_collections:
+      - prometheus.prometheus
+    assets:
+      - ansible/files/grafana/dashboards/bind_exporter.json
+    host_vars:
+      rhbase_firewall_allow_ports:
+        - 9119/tcp
+      bind_exporter_port: 9119
+      bind_statistics_channels: true
+  # endregion
+
+  # region mysqld_exporter
+  mysqld_exporter:
+    fqcn: prometheus.prometheus.mysqld_exporter
+    priority: 50
+    galaxy_collections:
+      - prometheus.prometheus
+    assets:
+      - ansible/files/grafana/dashboards/mysqld_exporter.json
+    host_vars:
+      rhbase_firewall_allow_ports:
+        - 9104/tcp
+      rhbase_install_packages:
+        - python3-PyMySQL
+      mysqld_exporter_enabled_collectors:
+        - info_schema.processlist
+        - info_schema.innodb_metrics
+        - info_schema.tablestats
+        - info_schema.tables
+        - info_schema.userstats
+        - engine_innodb_status
+        - slave_status
+      mysqld_exporter_port: 9104
+      mysqld_exporter_socket: "/var/lib/mysql/mysql.sock"
+      mysqld_exporter_web_listen_address: "0.0.0.0:9104"
+  # endregion
+
+  # region node_exporter
   node_exporter:
     fqcn: prometheus.prometheus.node_exporter
     priority: 50
     galaxy_collections:
       - prometheus.prometheus
     assets:
-      - ansible/files/grafana_dashboards/node_exporter.json
+      - ansible/files/grafana/dashboards/node_exporter.json
     host_vars:
       rhbase_firewall_allow_ports:
         - 9100/tcp
       node_exporter_port: 9100
-
-  bind_exporter:
-    fqcn: prometheus.prometheus.bind_exporter # role from the prometheus.prometheus collection
-    priority: 50
-    depends_on:
-      - dns_server
-    galaxy_collections:
-      - prometheus.prometheus
-    assets:
-      - ansible/files/grafana_dashboards/bind_exporter.json
-    host_vars:
-      rhbase_firewall_allow_ports:
-        - 9119/tcp
-      bind_exporter_port: 9119
-
-  mysqld_exporter:
-    fqcn: prometheus.prometheus.mysqld_exporter # role from the prometheus.prometheus collection
-    priority: 50
-    depends_on:
-      - web_server
-        # Assumes mysqld_exporter monitors a MySQL instance managed by web_server.
-        # Remove or adjust this dependency if targeting a standalone database host.
-    galaxy_collections:
-      - prometheus.prometheus
-    assets:
-      - ansible/files/grafana_dashboards/mysqld_exporter.json
-    host_vars:
-      rhbase_firewall_allow_ports:
-        - 9104/tcp
-        - 443/tcp
-      rhbase_install_packages:
-        - python3-PyMySQL
-      mysqld_exporter_port: 9104
+  # endregionI
