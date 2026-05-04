@@ -103,6 +103,11 @@ def detect_diagram_type(puml_text):
     Reads the first non-empty, non-comment line and matches it against the
     two supported diagram types.  Exits with an error if neither is found.
     """
+    # Remove block comments (/' ... '/) before line-by-line parsing.
+    # re.DOTALL lets '.' match newlines so multi-line blocks are caught.
+    block_comment_re = re.compile(r"\/'[\s\S]*?'\/", re.DOTALL)
+    puml_text = block_comment_re.sub("", puml_text)
+
     comment_re = re.compile(r"'.*|//.*")
     startnwdiag_re = re.compile(r"@startnwdiag")
     startuml_re = re.compile(r"@startuml")
@@ -190,9 +195,8 @@ def parse_nwdiag(puml_text):
       - netmask  : dotted-decimal netmask string
       - hosts    : dict of hostname -> {ips, netmasks, networks, cpus, memory}
     """
-    # Remove block comments (/* ... */ and /' ... '/) before line-by-line parsing.
-    # re.DOTALL lets '.' match newlines so multi-line blocks are caught.
-    block_comment_re = re.compile(r"\/\*[\s\S]*?\*\/|\/'[\s\S]*?'\/", re.DOTALL)
+    # Remove block comments before line-by-line parsing.
+    block_comment_re = re.compile(r"\/'[\s\S]*?'\/", re.DOTALL)
     puml_text = block_comment_re.sub("", puml_text)
 
     # Compile all patterns once; they are reused for every line in the loop.
@@ -332,7 +336,7 @@ def parse_uml(puml_text):
     connections is a list of dicts with keys from_node, from_role, to_node, to_role.
     """
     # Remove block comments before line-by-line parsing.
-    block_comment_re = re.compile(r"\/\*[\s\S]*?\*\/|\/'[\s\S]*?'\/", re.DOTALL)
+    block_comment_re = re.compile(r"\/'[\s\S]*?'\/", re.DOTALL)
     puml_text = block_comment_re.sub("", puml_text)
 
     # Compile all patterns once.
@@ -345,7 +349,9 @@ def parse_uml(puml_text):
     close_re = re.compile(r"^\}$")
     # Matches role-to-role connections of the form: node.role --> node.role
     # The arrow may carry a label, colour modifier, or thickness marker.
-    role_conn_re = re.compile(r"(\w+)\.(\w+)\s+-(?:[\w]|\[[^\]]*\]|-)*>\s+(\w+)\.(\w+)")
+    role_conn_re = re.compile(
+        r"(\w+)\.(\w+)\s+-(?:[\w]|\[?[^\]]*\]|-)*>\s+(\w+)\.(\w+)"
+    )
 
     connections = []
     diagram_name = None
@@ -1316,25 +1322,63 @@ def convert(nwdiag_path, uml_path=None, role_config_path=None):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Convert PlantUML diagrams to Ansible and Vagrant configuration"
+        description="Convert PlantUML diagrams to Ansible and Vagrant configuration",
+        usage=(
+            "%(prog)s [--nwdiag] <nwdiag_path> [[--uml] <uml_path>] "
+            "[--role-config <path>]"
+        ),
     )
-    parser.add_argument("nwdiag_path", help="Path to the @startnwdiag input file")
     parser.add_argument(
-        "uml_path",
+        "--nwdiag",
+        dest="nwdiag_path",
+        metavar="PATH",
+        help="Path to the @startnwdiag input file",
+    )
+    parser.add_argument(
+        "--uml",
+        dest="uml_path",
+        metavar="PATH",
         nargs="?",
+        default=None,
         help="Path to the @startuml deployment diagram (optional)",
     )
     parser.add_argument(
         "--role-config",
-        default=None,
-        metavar="PATH",
         dest="role_config_path",
+        metavar="PATH",
+        default=None,
         help="Path to role-config.yml (default: next to plantuml2ansible.py)",
     )
+    parser.add_argument(
+        "nwdiag_path_pos",
+        metavar="nwdiag_path",
+        nargs="?",
+        default=None,
+        help=argparse.SUPPRESS,  # hidden; used when --nwdiag flag is omitted
+    )
+    parser.add_argument(
+        "uml_path_pos",
+        metavar="uml_path",
+        nargs="?",
+        default=None,
+        help=argparse.SUPPRESS,  # hidden; used when --uml flag is omitted
+    )
+
     args = parser.parse_args()
+
+    # Merge positional fallbacks into the named destinations.
+    # --nwdiag takes priority over a bare positional value.
+    nwdiag_path = args.nwdiag_path or args.nwdiag_path_pos
+    uml_path = args.uml_path or args.uml_path_pos
+
+    if not nwdiag_path:
+        parser.error(
+            "a @startnwdiag file path is required (pass it with --nwdiag or as the first positional argument)"
+        )
+
     convert(
-        nwdiag_path=args.nwdiag_path,
-        uml_path=args.uml_path,
+        nwdiag_path=nwdiag_path,
+        uml_path=uml_path,
         role_config_path=args.role_config_path,
     )
 

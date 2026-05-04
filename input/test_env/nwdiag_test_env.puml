@@ -1,42 +1,61 @@
 @startnwdiag test_env
-' Specify diagram name above, otherwise falls back on filename for output directory.
-' Note: this name must match with that of the deployment diagram.
+/'
+Diagram name definition
 
-' Network definition
-'
-' Format: network <network_name> { ... }
+Format: @startnwdiag <diagram_name>
+
+Note: if no diagram name is specified, the filename is used as a fallback for
+naming the output directory. This name should match the deployment diagram's.
+'/
+
+/'
+Network definition
+
+Format: network <network_name> {
+        ... 
+        }
+'/
 network test.lan {
-  ' Subnet definition
-  '
-  ' Format: address = <network-address>/<prefix-length>
+  /'
+  Subnet definition
+  
+  Format: address = <network-address>/<prefix-length>
+
+  Note: Only IPv4 is supported when defining network addresses.
+  '/
   address = "172.26.0.0/24"
 
-  ' Host definition
-  '
-  ' Notes:
-  ' - By default the <description> attribute will be used as the resulting hostname;
-  '   <host_identifier> is the fallback if <description> is unused.
-  ' - Underscores in the hostname will be converted to hyphens, due to Unix conventions
-  ' - Hosts with the "managed = false" flag will be rendered by PlantUML, but ignored
-  '   by the converter.
-  '
-  ' Format: <host_identifier> [description = <description> address = <ipv4_address>, cpus = <amt_cores>, memory = <amt_gb_ram>, managed = <true|false>]
+  /'
+  Host definition
+  
+  Format: <host_identifier> [address = <ipv4_address>, description = <description>, cpus = <amt_cores>, memory = <amt_gb_ram>, managed = <true|false>]
+  
+  Notes:
+  - The only mandatory attribute is "address", all others are optional. Only IPv4
+    is supported when defining IP addresses.
+  - By default the <description> attribute will be used as the resulting hostname;
+    <host_identifier> is the fallback if <description> is unused.
+  - Underscores in the hostname will be converted to hyphens, due to Unix conventions.
+  - Hosts with the "managed = false" flag will be rendered by PlantUML, but ignored
+    by the converter.
+  '/
+  unmanaged_router [address = "172.26.0.254", managed = false]
   dns [description = "dns", address = "172.26.0.20"]
   monitoring [description = "monitoring", address = "172.26.0.30", cpus = 2, memory = 2048]
   web [description = "web", address = "172.26.0.10"]
 }
 
-network virtualbox_nat {
-  address = "10.0.2.0/24"
+/'
+Note: the following network is shown to demonstrate the possibility of defining
+multiple networks, as well as unmanaged hosts. When generating both Vagrant and
+Ansible code, the following hosts (and subsequently, the network) will not be
+covered by the converter.
+'/
+network unmanaged.lan {
+  address = "172.26.10.0/24"
 
-  dns [address = "10.0.2.15", managed = false]
-  monitoring [address = "10.0.2.15", managed = false]
-  web [address = "10.0.2.15", managed = false]
-  virtualbox_nat_gateway [address = "10.0.2.2", managed = false]
-  virtualbox_nat_dns [address = "10.0.2.3", managed = false]
+  unmanaged_router [address = "172.26.10.254", managed = false]
+  unmanaged_workstation [address = "172.26.10.128", managed = false]
 }
-
-real_internet [shape = cloud]
-virtualbox_nat_gateway -- real_internet
 
 @endnwdiag

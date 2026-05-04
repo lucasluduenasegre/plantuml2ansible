@@ -6,161 +6,263 @@
 
 ## Context
 
-PlantUML2Ansible is a "work in progress" and Proof-of-Concept transpiler that converts network and deployment diagrams (created using PlantUML) to IaC and configuration management supported environments (provided by Vagrant & Ansible, respectively). This solution is developed as part of a bachelor's thesis within the context of Applied IT at HOGENT (and its relevant course modules such as "[Cybersecurity Advanced](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193610&b=5&c=1)" and "[Infrastructure Automation](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193608&b=5&c=1)".
+PlantUML2Ansible is a "work in progress" and proof-of-concept converter that converts network and deployment diagrams (created using PlantUML) to IaC and configuration management supported environments (provided by Vagrant & Ansible, respectively). This solution is developed as part of a bachelor's thesis within the context of Applied IT at HOGENT (and its relevant course modules such as "[Cybersecurity Advanced](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193610&b=5&c=1)" and "[Infrastructure Automation](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193608&b=5&c=1)".
 
 <!--TODO-->
 
 ## Limitations
 
-Since this project is a proof-of-concept, there are a number of noteworthy limitations:
+Since this project is a proof-of-concept, there are a number of noteworthy limitations (which will be referred to again later, in the relevant sections):
 
-1. The resulting environment will be set up locally using Vagrant and will be configured using an Ansible `control` node VM. The host machine, therefore, does not require Ansible to be installed.
-1. Only IPv4 is supported when defining the IP and network addresses.
-1. The diagrams can only represent hosts that are to be managed by either the Vagrant or Ansible code, **unless** otherwise specified in the network diagram (`managed = false`).
-1. Only nodes within a **single network** can be defined in the deployment diagram (When generating **both Vagrant and Ansible code**). The configuration of routers (as well as the more elaborate firewall rules that it implies) is a task that goes beyond the scope of demonstrating the possibility of converting UML diagrams to configuration management code.
-1. Multiple networks **can** be specified when **only generating Vagrant code** and as long as there are no hosts with more than **3** defined IP addresses. This is a technical limitation due to VirtualBox's maximum of 4 network interfaces, of which the first is reserved for the NAT interface Vagrant uses.
-1. The virtual machines in this environment will **only** use the **AlmaLinux** operating system, as the predefined roles for the converter are reliant on Ansible roles developed by Bert Van Vreckem. Additionally, since these roles were developed for a now deprecated version of Ansible, the Vagrant box to be used will be **"bento/almalinux-9"** instead of the more recent "bento/almalinux-10". This choice has obvious security implications for this environment, yet it is a compromise that had to be made for this proof-of-concept.
+1. Only hosts/nodes within a **single network** can be defined in the deployment diagram when generating **both Vagrant and Ansible code**. The configuration of routers (as well as the more elaborate firewall rules that it implies) is a task that goes beyond the scope of this proof-of-concept, which is to demonstrate the possibility of converting UML diagrams to configuration management code. As such, each VM will have internet access through their unique NAT interface, provided by Vagrant.
+2. Multiple networks **can** be specified when **only generating Vagrant code** and as long as there are no hosts with more than **3** defined IP addresses. This is a technical limitation due to VirtualBox's maximum of 4 network interfaces, of which the first is reserved for the NAT interface Vagrant uses.
+3. The resulting environment will be set up locally using Vagrant and will be configured using an Ansible `control` node VM. The host machine, therefore, does not require Ansible to be installed. The `control` node's IP address will, by default, be the broadcast address of the network minus two.
+4. Only IPv4 is supported when defining the IP and network addresses.
+5. The diagrams should only represent hosts that are to be managed by either the Vagrant or Ansible code, **unless** otherwise specified in the network diagram (`managed = false`).
+6. The virtual machines in this environment will **only** use the **AlmaLinux** operating system, as the predefined roles for the converter are reliant on Ansible roles developed by Bert Van Vreckem. Additionally, since these roles were developed for a now deprecated version of Ansible, the Vagrant box to be used will be **"bento/almalinux-9"** instead of the more recent "bento/almalinux-10". This choice has obvious security implications for this environment, yet it is a compromise that had to be made for this proof-of-concept.
 
 <!--TODO-->
 
-## Prerequisites
+## Prerequisites & Installation
 
 - Git 
 - Python (tested on 3.11.2)
-  - `pip` dependencies (see `requirements.yml`):
+  - `pip` dependencies (see `requirements.txt`):
     - `jinja2`
     - `pyyaml`
-    - `yamllint`
 - Vagrant (tested on 2.4.9)
 - VirtualBox (tested on 7.2.6)
 
-As previously mentioned; Ansible only runs on the `control` node and therefore does not have to be installed on the host machine.
+Ansible only runs on the `control` node VM and therefore does not have to be installed on the host machine.
 
-## Installation
-
-<!--TODO-->
-
-Linux/Mac:
+To set up the converter, execute the following commands on your hostmachine's terminal:
 
 ```bash
+git clone git@github.com:lucasluduenasegre/plantuml2ansible.git
+cd plantuml2ansible
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Windows:
-
-```powershell
-python3 -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-```
+## Installation
 
 ## Usage
 
 <!--TODO-->
 
-### Network diagram only
-
-Converting a network diagram to an IaC-only supported environment with Vagrant (**multiple networks** supported):
-
-```
-python convert.py <nwdiag-path>
-```
-
-This is useful if you wish to have more freedom when setting up configuration management with Ansible, but you do want a ready-to-use Vagrant environment. To that end, this setup up **does not** include a `control` node.
-
 ### Full mode (network + deployment diagram)
 
-Converting a network diagram + corresponding deployment diagram (both in `.puml`) to an IaC (Vagrant) + configuration management (Ansible) supported environment (only **one single network** is supported):
+Converting a network diagram + corresponding deployment diagram (both in `.puml`) to an IaC (Vagrant) + configuration management (Ansible) supported environment:
 
 ```
-python convert.py <nwdiag-path> <uml-path> [--role-config <role-config-path>]
+python plantuml2ansible.py [--nwdiag] <nwdiag_path> [--uml] <uml_path> [--role-config <role_config_path>]
 ```
 
-This will, in addition to a Vagrant environment, set up a rudimentary yet completely Ansible-supported environment (which **does** a `control` node) based on predefined roles assigned to hosts. This environment, however, will be limited to a single network, as routing is beyond the scope for this proof-of-concept. A custom role configuration file can optionally be provided.
+This will, in addition to a Vagrant environment, set up a rudimentary yet completely Ansible-supported environment (including a `control` node) based on predefined roles assigned to the hosts.
+
+Only hosts/nodes within a **single network** can be defined in the deployment diagram for this use case. The configuration of routers (as well as the more elaborate firewall rules that it implies) is a task that goes beyond the scope of this proof-of-concept, which is to demonstrate the possibility of converting UML diagrams to configuration management code. As such, each VM will have internet access through their unique NAT interface, provided by Vagrant.
+
+The `control` node's IP address will, by default, be the broadcast address of the network minus two.
+
+By default, the converter will use `role-config.yml` (in the same directory as the script) as the configuration file for predefined roles (which will be covered later). A custom role configuration file can optionally be provided.
+
+### Network diagram only
+
+Converting a network diagram to an IaC-only supported environment with Vagrant:
+
+```
+python plantuml2ansible.py [--nwdiag] <nwdiag_path>
+```
+
+This is useful if you wish to have a ready-to-use Vagrant environment, but you do want more freedom when setting up configuration management (with or without Ansible). To that end, this environment **will not** include a `control` node.
+
+Multiple networks **can** be specified for this use case, as long as there are no hosts with more than **3** defined IP addresses. This is a technical limitation due to VirtualBox's maximum of 4 network interfaces, of which the first is reserved for the NAT interface Vagrant uses.
+
+This is not the main use case of this tool, but it does demonstrate the ability to handle multiple networks with Vagrant, and it serves as a base for future extensions to this project.
 
 ## Input format (network + deployment diagrams)
 
-An important note, which might seem obvious, is that the converter assumes the provided PlantUML-based diagrams to be syntactically valid (and thus actually generate images).
-The converter covers a lot of error handling in order to provide the resulting environment, but the end responsibility for correct input mostly lies with the end user.
+An **important note**, which might seem obvious, is that the converter assumes the provided PlantUML-based diagrams to be syntactically valid (and thus actually render images).
+The converter covers a lot of error handling in order to accurately provide the desired
+environment, but the responsibility for correct input mostly lies with the end user.
+Therefore, always try to render your `.puml`-files before proceeding.
 
-<!--TODO-->
+In PlantUML, single-line comments are denoted using `'` or `//` (with no preceding content) and multi-line comments using `/'` to start and `'/` to end.
 
 ### Network diagram (`@startnwdiag`)
 
-The network diagram illustrates the logical topology of networks and hardware elements (in this case Vagrant VMs) in a given environment, along with their respective network and IP addresses. Multiple networks **can** be defined for IaC-only supported environments, as long as there are no hosts with more than **3** IP addresses.
+The network diagram illustrates the logical topology of networks and hardware elements (in this case Vagrant VMs) in a given environment, along with their respective network and IP addresses.
+Multiple networks **can** be defined for IaC-only supported environments, as long as there are no hosts with more than **3** defined IP addresses.
 
-Here follows an example of a possible network diagram (single-line comments are denoted using apostrophes (`'`)):
+Here follows an example of a possible network diagram:
 
-```
+```plantuml
 @startnwdiag test_env
-' Specify diagram name above, otherwise falls back on filename for output directory
-' Note: this name must match with that of the deployment diagram.
+/'
+Diagram name definition
 
-' Network definition
-'
-' Format: network <network_name> { ... }
+Format: @startnwdiag <diagram_name>
+
+Note: if no diagram name is specified, the filename is used as a fallback for
+naming the output directory. This name should match the deployment diagram's.
+'/
+
+/'
+Network definition
+
+Format: network <network_name> {
+        ... 
+        }
+'/
 network test.lan {
-  ' Subnet definition
-  '
-  ' Format: address = <network-address>/<prefix-length>
+  /'
+  Subnet definition
+  
+  Format: address = <network-address>/<prefix-length>
+
+  Note: Only IPv4 is supported when defining network addresses.
+  '/
   address = "172.26.0.0/24"
 
-  ' Host definition
-  '
-  ' Notes:
-  ' - By default the <description> attribute will be used as the resulting hostname;
-  '   <host_identifier> is the fallback if <description> is unused.
-  ' - Underscores in the hostname will be converted to hyphens, due to Unix conventions
-  ' - Hosts with the "managed = false" flag will be rendered by PlantUML, but ignored
-  '   by the converter.
-  '
-  ' Format: <host_identifier> [description = <description> address = <ipv4_address>, cpus = <amt_cores>, memory = <amt_gb_ram>, managed = <true|false>]
+  /'
+  Host definition
+  
+  Format: <host_identifier> [address = <ipv4_address>, description = <description>, cpus = <amt_cores>, memory = <amt_gb_ram>, managed = <true|false>]
+  
+  Notes:
+  - The only mandatory attribute is "address", all others are optional. Only IPv4
+    is supported when defining IP addresses.
+  - By default the <description> attribute will be used as the resulting hostname;
+    <host_identifier> is the fallback if <description> is unused.
+  - Underscores in the hostname will be converted to hyphens, due to Unix conventions.
+  - Hosts with the "managed = false" flag will be rendered by PlantUML, but ignored
+    by the converter.
+  '/
+  unmanaged_router [address = "172.26.0.254", managed = false]
   dns [description = "dns", address = "172.26.0.20"]
   monitoring [description = "monitoring", address = "172.26.0.30", cpus = 2, memory = 2048]
   web [description = "web", address = "172.26.0.10"]
 }
 
-network virtualbox_nat {
-  address = "10.0.2.0/24"
+/'
+Note: the following network is shown to demonstrate the possibility of defining
+multiple networks, as well as unmanaged hosts. When generating both Vagrant and
+Ansible code, the following hosts (and subsequently, the network) will not be
+covered by the converter.
+'/
+network unmanaged.lan {
+  address = "172.26.10.0/24"
 
-  dns [address = "10.0.2.15", managed = false]
-  monitoring [address = "10.0.2.15", managed = false]
-  web [address = "10.0.2.15", managed = false]
-  virtualbox_nat_gateway [address = "10.0.2.2", managed = false]
-  virtualbox_nat_dns [address = "10.0.2.3", managed = false]
+  unmanaged_router [address = "172.26.10.254", managed = false]
+  unmanaged_workstation [address = "172.26.10.128", managed = false]
 }
-
-real_internet [shape = cloud]
-virtualbox_nat_gateway -- real_internet
 
 @endnwdiag
 ```
 
-
-
 The PlantUML code above will generate the following image:
 
-![](https://www.plantuml.com/plantuml/png/ZLGxRzim4DxrAmvQijYAuwGFf8uHT2Wwj4M18bCG29HqaeX8f40UxGXf_dkFj6MxiWraa-_nFJwIlhSa3Abr8KK5X9PILAle0lvqcCko1ryteWKbMWIHwHLEG5EDPYqjGYcQna8cycVG2ahPO9WhjG7jg7F4-mPpqgPdp5-Qy1QebdO3rpfBq0hAQrXBghaZ27G930y5TetkMrGqI8Wy0j9QcsVkbb99abf55rp-fWt3t8BQjXVRZzJJBE4LaYI1jsXeUvj98nIyHW1irMNSESJaQkWCkA8e35eBTplawRQql5nqXXTVfcozedePmS5qVFLfdim_9hDaTZc_YQC0-btRasG-7NiRFgVmjVSZmZKKqbWKQ7CZEx-m145aPEO8ERQcWGp1MIn0s33BtBmcLGKrC_a4lWHGW8KlfBBWK6KfqIn1XfLmZE4GPJcYuW6dF7go5VQW2ZGsrym2KldjWMQl9jTgXOPO4cce-wv6PITGEEJV321VDXFAKzWDRaZ53jS08Mw54XKZt7bn5cCe6r7j60nw6TpEUlZD9qaFFtzCW2C1MIdDZQrZRbEz5sIIewCzpkJn802c7qM_lmcoMzsampMOGDwvK1OjfI4UhhNOyiqVgbMM6j5oUUzjGSRXt-1m-HG15CgE-MEknPEJbse-Y_rIgvKaRVZ4ZtRthJCGrxDu9tr-87W-k_diiTUO7O5oxGpQbHVq5kqUsaeQSgB9z4kg1C7hw77Cl8VzqmZcZ_jN7vXjT1t6jj-_vGszVtpa8Aq4uLhqfn3cxm8uu_7wr387QL0qgLI4XYE5HrkB3daWRxGhdg8pugPJ-6ylYkvH5Pk_-7y0)
+![](https://www.plantuml.com/plantuml/svg/dLJ1ZkCs3BthAuZf8PV4kQU3O5iKxHwwnQBedeeYK2mw9Y9BNf5ArXZClrTInlKOxY7PN6I8x_7HZy_vmAA3nCw28Ci1tKLjL-eNqgUWEt2wGp3Oa2CXxvJwrOTEomucshEvOGyPkrVg3o-u0sh0UJ3lsn03zrXJGsZM82r2GnR7KcGqe1aqDDhQewxFqFYWKfdSgQ1zb3vAwXcm5X-62lvgYM-zkVNH6aYZrMq1EvIh3-TnWXLNQhLLQWMVz1a1TOBLlkkzGoVGOm3d3K9qz3MYOXHWx7NGIGUgJFiS0ze1BiHHspLSlLi9jFg2eDq0s3HO2tXNj1EHCIYBZO1u27Hgnx6pXzdVZvvbvcjsZNTg0pyF-Lv7AybPv3fGdn5xk9ArSCJHgA8Ka1Cm6zIcXjc97zLpVZoGGIVPwh07Ak39LshchOlzBlUjqW1VdC70jK-zWLnXZit_cw7sxe91qEJtQuU-HSThC151V6f0tsu8bzjpDQMccBmSKFDyeBog0ZMES_4fdK_meXIaNt8l7tzwEqzclXnrfjK-XuHRY9NBajT2ItBvc5X7SkQ0tteV1CEybcSwr9RIu_yK64Covj07wdGOve3ozbFNLtLxnyux4X_o4b_kbPeuRuftALtnMDnCvzC3MWD_jKit5agBMjORntijgSyxsuZVPFjpGjpjY-3nJ-Ed4FoLeOiieErL3moz9oVG1D_1x7jQmp4ArDhbEB8C5WteklR1P2F5AoY_LgJdtNPR1yqjcewSgKuaRJnMvBUVhNRovTFl7qdgjgKp1lujai6jrOEFydPKhNHsol0YljKoOvlD_XvSpddolPgyBynojGoJchP-7-CzOP4OsFpzGx9Bst_U-BFCFqOj8NYSEbM_iqDEM3NBvwFakQxALtSkumCw4plxBm00)
 
-<!--TODO-->
+### Deployment diagram (`@startuml`)
 
-### Deployment diagram (`@startnwdiag`)
+The deployment diagram represents the configuration of hosts (denoted as nodes) and their components (in this case predefined Ansible roles). As mentioned before, only hosts/nodes within a **single network** can be defined in this diagram for IaC + configuration management supported environments.
 
-The deployment diagram represents the configuration of hosts (denoted as nodes) and their components (in this case Ansible roles). As mentioned before, only hosts within a single network can be represented here.
+The following is an example of a possible deployment diagram:
 
-<!--TODO-->
+```plantuml
+@startuml test_env
+/'
+Diagram name definition
 
- ## Output structure<!-- in `<output_directory>/<diagram_name>/` -->
+Format: @startuml <diagram_name>
+
+Note: if no diagram name is specified, the filename is used as a fallback for
+naming the output directory. This name should match the network diagram's.
+'/
+
+' Make each component per node unique
+set separator .
+
+' Purely visual, won't have any effect on the parser
+left to right direction
+
+/'
+Host definition
+
+Notes:
+- By default <description> will be used as the resulting hostname;
+<host_identifier> is the fallback if <description> is unused.
+- Underscores in the hostname will be converted to hyphens, due to Unix conventions.
+
+Format: node <host_identifier> as <description>
+'/
+node dns as "dns" {
+
+    /'
+    Role definition
+
+    Format: component <role_identifier> as <role_name>
+    '/
+    component bind_exporter
+    component dns_client
+    component dns_server_primary
+    component node_exporter
+}
+
+node monitoring {
+    component dns_client
+    component monitoring_server
+    component node_exporter
+}
+
+node web as "web" {
+    component dns_client
+    component mysqld_exporter
+    component node_exporter
+    component web_server
+}
+
+/'
+Role-to-role connections
+
+Note: Arrows must always point from left to right, but can be styled according to
+      https://crashedmind.github.io/PlantUMLHitchhikersGuide/layout/layout.html
+
+Format: <network_identifier>.<host_identifier>.<role_identifier> --> <network_identifier>.<host_identifier>.<role_identifier>
+'/
+dns.dns_client --> dns.dns_server_primary
+
+monitoring.dns_client --> dns.dns_server_primary
+monitoring.monitoring_server --> dns.bind_exporter
+monitoring.monitoring_server --> dns.node_exporter
+monitoring.monitoring_server --> monitoring.node_exporter
+monitoring.monitoring_server --> web.mysqld_exporter
+monitoring.monitoring_server --> web.node_exporter
+
+web.dns_client --> dns.dns_server_primary
+
+@enduml
+```
+
+This code will render the following image:
+
+![](https://www.plantuml.com/plantuml/svg/dLHDZ-Cs3BthLn1poMNYtAU3O5iKxHwwnQBed0F5ecCYCkKLgMIDnVxtciY7n_0bKr-KYE_nqKzF_YJgivOkWgBe3ldaDYltE_b3zXsmxn02DiIabDYvFrBklBx0H7iD5-pEi5ld_awABq0DS8BmlWq9I8yrDOJX6RH5Q2ZYhLG40tW13usFSU_h8pGfkx5CV30qfA9zKGYKiTQKXmh-RKaklQLD9GRelDQjWO5HpoaVRnEif7AhZNCh-EAF2EX7M9swFZ6oGeyPE0M4mlIje1DK4EnzzfeoL4RxMZB60KuanSTdE2TUARJ-XE1v06mQh1KIcpQCHC7i8ZOAcY3JeRsDRHwQlv-JwCnNSqrUt1f-6spVbwYZioXrfjuGMpXJZB37kr6cb556e1dK9b5puXVtQZzt593LhCvR80FZv2iryzO6A6nzAxU6DmwOfKuP1OYDUMz-dw5EVCAi6Epzsg5laUKPGa7x_yRq_O9WQo_Lb1ep6PO3UfaFP4TbK0WiLdmQroVuuHoCp-YUBV-aE4-cRTvqfgDzpIDk8MQRrxmQRPIpPMBjYSCEl_SfA-PvpMRQrP6GrIqBWdaqPjTdwdmUvW2mLvgw_dINT-mIawPiX_ZZKQc9SrLyIEcCUp0tn_Nf0rg3V8iBDnPAovhftSRxwIprTcPhJMkptnB2bniXju_6hpcdiq1NHC77iny4-aIiqEJKmUm-FSE-ADIUBOwYGxHBKTSf1pDIamDxe5NjvMMpgREN5aD77Ae3QLls5QNDr-XPtxxyzPcqRbiwOfO_2mNSH3-aejUbQhMBKuPVhv-Mzw6g5fckbi5RhxV_csmt8h1Kqoc1jRjiBMBdfdmyo7X7M6JhpflTYiSe5eyFKART3p8jQzKigO-IvZhEjXuq-HDoA5ty3m00)
+
+### Role configuration
+
+## Output structure<!-- in `<output_directory>/<diagram_name>/` -->
 
 ### Network diagram only
 
 Generated (based on diagram):
 - `vagrant-hosts.yml` (**without** `control`)
+  - Hosts with multiple IP addresses can be defined here (this functionality was previously not present in the Vagrantfile)
 
 Copied (verbatim):
 - `Vagrantfile`
+  - The virtual machines in this environment will **only** use **"bento/almalinux-9"** as Vagrant boxes.
 
 <!--TODO-->
 
@@ -179,6 +281,7 @@ Generated (based on diagrams):
 
 Copied (verbatim):
 - `Vagrantfile`
+  - The virtual machines in this environment will **only** use **"bento/almalinux-9"** as Vagrant boxes.
 - `scripts/`
 - `ansible/roles/<role_name>/` (for each defined role)
 - `ansible/files/grafana/dashboards/<grafana_dashboard>.json` (for each defined exporter)

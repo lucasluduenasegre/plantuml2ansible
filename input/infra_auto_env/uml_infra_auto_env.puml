@@ -47,15 +47,15 @@ srv003.dns_client -[#teal]-> srv002.dns_server_secondary
 
 srv004.dns_client -[#teal]-> srv001.dns_server_primary
 srv004.dns_client -[#teal]-> srv002.dns_server_secondary
-srv004.monitoring_server -[#orange]-> srv001.bind_exporter
-srv004.monitoring_server -[#orange]-> srv001.node_exporter
-srv004.monitoring_server -[#orange]-> srv002.bind_exporter
-srv004.monitoring_server -[#orange]-> srv002.node_exporter
-srv004.monitoring_server -[#orange]-> srv003.node_exporter
-srv004.monitoring_server -[#orange]-> srv004.node_exporter
-srv004.monitoring_server -[#orange]-> srv100.apache_exporter
-srv004.monitoring_server -[#orange]-> srv100.mysqld_exporter
-srv004.monitoring_server -[#orange]-> srv100.node_exporter
+srv004.monitoring_server -[#coral]-> srv001.bind_exporter
+srv004.monitoring_server -[#coral]-> srv001.node_exporter
+srv004.monitoring_server -[#coral]-> srv002.bind_exporter
+srv004.monitoring_server -[#coral]-> srv002.node_exporter
+srv004.monitoring_server -[#coral]-> srv003.node_exporter
+srv004.monitoring_server -[#coral]-> srv004.node_exporter
+srv004.monitoring_server -[#coral]-> srv100.apache_exporter
+srv004.monitoring_server -[#coral]-> srv100.mysqld_exporter
+srv004.monitoring_server -[#coral]-> srv100.node_exporter
 
 srv100.dns_client -[#teal]-> srv001.dns_server_primary
 srv100.dns_client -[#teal]-> srv002.dns_server_secondary

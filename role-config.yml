@@ -76,10 +76,10 @@ roles:
     galaxy_roles:
       - bertvv.bind
     host_vars:
-      rhbase_firewall_allow_services:
-        - dns
-        - prometheus-node-exporter
       rhbase_firewall_allow_ports:
+        - 53/tcp
+        - 53/udp
+        - 9100/tcp
         - 9119/tcp
       bind_acls:
         - name: acl1
