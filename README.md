@@ -25,7 +25,7 @@ Since this project is a proof-of-concept, there are a number of noteworthy limit
 
 ## Prerequisites & Installation
 
-- Git 
+- Git
 - Python (tested on 3.11.2)
   - `pip` dependencies (see `requirements.txt`):
     - `jinja2`
@@ -59,7 +59,7 @@ Converting a network diagram + corresponding deployment diagram (both in `.puml`
 python plantuml2ansible.py [--nwdiag] <nwdiag_path> [--uml] <uml_path> [--role-config <role_config_path>]
 ```
 
-This will, in addition to a Vagrant environment, set up a rudimentary yet completely Ansible-supported environment (including a `control` node) based on predefined roles assigned to the hosts.
+This is the main use case of this tool, and will set up a Vagrant environment as well as a rudimentary yet completely Ansible-supported environment (including a `control` node) based on predefined roles assigned to the hosts.
 
 Only hosts/nodes within a **single network** can be defined in the deployment diagram for this use case. The configuration of routers (as well as the more elaborate firewall rules that it implies) is a task that goes beyond the scope of this proof-of-concept, which is to demonstrate the possibility of converting UML diagrams to configuration management code. As such, each VM will have internet access through their unique NAT interface, provided by Vagrant.
 
@@ -112,13 +112,13 @@ naming the output directory. This name should match the deployment diagram's.
 Network definition
 
 Format: network <network_name> {
-        ... 
+        ...
         }
 '/
 network test.lan {
   /'
   Subnet definition
-  
+
   Format: address = <network-address>/<prefix-length>
 
   Note: Only IPv4 is supported when defining network addresses.
@@ -127,9 +127,9 @@ network test.lan {
 
   /'
   Host definition
-  
+
   Format: <host_identifier> [address = <ipv4_address>, description = <description>, cpus = <amt_cores>, memory = <amt_gb_ram>, managed = <true|false>]
-  
+
   Notes:
   - The only mandatory attribute is "address", all others are optional. Only IPv4
     is supported when defining IP addresses.
@@ -256,37 +256,45 @@ This code will render the following image:
 
 ### Network diagram only
 
-Generated (based on diagram):
-- `vagrant-hosts.yml` (**without** `control`)
-  - Hosts with multiple IP addresses can be defined here (this functionality was previously not present in the Vagrantfile)
-
 Copied (verbatim):
+
 - `Vagrantfile`
-  - The virtual machines in this environment will **only** use **"bento/almalinux-9"** as Vagrant boxes.
+  - File that describes the general provisioning of each host managed by Vagrant. The hosts in this environment will **only** use **"bento/almalinux-9"** as their base boxes.
+
+Generated (based on diagram):
+
+- `vagrant-hosts.yml` (**without** `control`)
+  - File that defines each host, their hostname, IP address(es), and hardware specifications. Hosts with **multiple** IP addresses **can** be defined here.
 
 <!--TODO-->
 
 ### Full mode (network + deployment diagram)
 
-Generated (based on diagrams):
-- `vagrant-hosts.yml` (**with** `control`)
-- Inventory file (`ansible/inventory.yml`)
-  - As the environment is deployed locally with Vagrant, the inventory will therefore be shaped according to this backend.
-- `ansible/site.yml`
-- `ansible/host_vars/dns.yml`
-- `ansible/host_vars/monitoring.yml`
-- `ansible/host_vars/web.yml`
-- `ansible/requirements.yml`
-
-
 Copied (verbatim):
-- `Vagrantfile`
-  - The virtual machines in this environment will **only** use **"bento/almalinux-9"** as Vagrant boxes.
+
+- **`Vagrantfile`**
 - `scripts/`
-- `ansible/roles/<role_name>/` (for each defined role)
-- `ansible/files/grafana/dashboards/<grafana_dashboard>.json` (for each defined exporter)
-- `ansible/files/db.sql` (when using `role_web_server`)
-- `ansible/files/test.php` (when using `role_web_server`)
+  - Provisioning scripts for the Ansible `control` node.
+- `ansible/roles/<role_name>/` (for each defined role in the deployment diagram)
+  - Predefined (custom) Ansible roles, which correspond to the FQCN (Fully Qualified Collection Name) of a role entry in `role-config.yml`.
+- `ansible/files/grafana/dashboards/<grafana_dashboard>.json` (for each defined exporter role in the deployment diagram)
+  - Monitoring dashboards to be provisioned for the Prometheus + Grafana monitoring stack (deployed using the role `monitoring_server`).
+- `ansible/files/db.sql` (when `role_web_server` is defined in the deployment diagram)
+  - Very small and simple MySQL database.
+- `ansible/files/test.php` (when `role_web_server` is defined in the deployment diagram)
+  - Simple PHP page that queries the afforementioned (local) database.
+
+Generated (based on diagrams):
+
+- `vagrant-hosts.yml` (**including** `control`)
+- Inventory file (`ansible/inventory.yml`)
+  - Similar to `vagrant-hosts.yml`; defines the managed hosts (and corresponding IP addresses) which will be configured by Ansible.
+- `ansible/site.yml`
+  - The main playbook of the Ansible environment, assigning each role per host (as defined on the deployment diagram), as well as general prerequisites for all hosts.
+- `ansible/host_vars/<hostname>.yml` (for each defined host in the deployment diagram)
+  - Variables (mostly) derived from information on the deployment diagram for configuring the roles on each defined host.
+- `ansible/requirements.yml`
+  - File describing the required roles and collections to be downloaded from Ansible Galaxy, mostly as dependencies for the predefined roles.
 
 <!--TODO-->
 
@@ -294,42 +302,42 @@ Copied (verbatim):
 
 ### Ansible Galaxy roles & collections
 
-- Bert Van Vreckem. (2015a). *bertvv/ansible-role-bind: Sets up ISC BIND as an authoritative DNS server on several Linux distros & FreeBSD*. GitHub. https://github.com/bertvv/ansible-role-bind
+- Bert Van Vreckem. (2015a). _bertvv/ansible-role-bind: Sets up ISC BIND as an authoritative DNS server on several Linux distros & FreeBSD_. GitHub. https://github.com/bertvv/ansible-role-bind
   - This was used for the custom role `role_dns_server`, which deploys a primary (and secondary) nameserver.
 
-- Bert Van Vreckem. (2015b). *bertvv/ansible-role-dhcp: Ansible role for setting up ISC DHCPD on RHEL/CentOS 7*. GitHub. https://github.com/bertvv/ansible-role-dhcp
+- Bert Van Vreckem. (2015b). _bertvv/ansible-role-dhcp: Ansible role for setting up ISC DHCPD on RHEL/CentOS 7_. GitHub. https://github.com/bertvv/ansible-role-dhcp
   - This was used for the custom role `role_dhcp_server`, which deploys a DHCP server.
 
-- Bert Van Vreckem. (2015c). *bertvv/ansible-role-httpd: A simple Ansible role for installing and configuring the Apache web server for RHEL/CentOS 7 and Fedora 28*. GitHub. https://github.com/bertvv/ansible-role-httpd
+- Bert Van Vreckem. (2015c). _bertvv/ansible-role-httpd: A simple Ansible role for installing and configuring the Apache web server for RHEL/CentOS 7 and Fedora 28_. GitHub. https://github.com/bertvv/ansible-role-httpd
   - This was used for the custom role `role_web_server`, which deploys a very simple Apache web server (including a small, built-in MariaDB database).
 
-- Bert Van Vreckem. (2016). *bertvv/ansible-role-rh-base: Ansible role for basic setup of a server with a RedHat-based Linux distribution (CentOS, Fedora, RHEL, ...)*. GitHub. https://github.com/bertvv/ansible-role-rh-base
+- Bert Van Vreckem. (2016). _bertvv/ansible-role-rh-base: Ansible role for basic setup of a server with a RedHat-based Linux distribution (CentOS, Fedora, RHEL, ...)_. GitHub. https://github.com/bertvv/ansible-role-rh-base
   - This was used for executing various basic configuration tasks (such as setting up the firewall and installing packages) on every VM (currently all running AlmaLinux 9).
 
-- Grafana Labs. (2026). *grafana/grafana-ansible-collection: grafana.grafana Ansible collection provides modules and roles for managing various resources on Grafana Cloud and roles to manage and deploy Grafana Agent and Grafana*. GitHub. https://github.com/grafana/grafana-ansible-collection
+- Grafana Labs. (2026). _grafana/grafana-ansible-collection: grafana.grafana Ansible collection provides modules and roles for managing various resources on Grafana Cloud and roles to manage and deploy Grafana Agent and Grafana_. GitHub. https://github.com/grafana/grafana-ansible-collection
   - This was used for the custom role `role_monitoring_server`, which deploys a Prometheus + Grafana monitoring stack.
 
-- Prometheus Monitoring Community. (2026). *prometheus-community/ansible: Ansible Collection for Prometheus. GitHub*. https://github.com/prometheus-community/ansible
+- Prometheus Monitoring Community. (2026). _prometheus-community/ansible: Ansible Collection for Prometheus. GitHub_. https://github.com/prometheus-community/ansible
   - This was used for the custom role `role_monitoring_server` as well as the various exporters (node, MySQL, BIND).
 
 ### Grafana dashboards
 
-- F., R. (2025). *rfmoz/grafana-dashboards: Grafana dashboards*. GitHub. https://github.com/rfmoz/grafana-dashboards
+- F., R. (2025). _rfmoz/grafana-dashboards: Grafana dashboards_. GitHub. https://github.com/rfmoz/grafana-dashboards
   - This was used for the Grafana dashboards for Apache Exporter (altered slightly), Bind Exporter, and Node Exporter.
 
-- Grafana Labs. (2024). *MySQL Exporter Quickstart and Dashboard*. Grafana Labs. https://grafana.com/grafana/dashboards/14057-mysql/
+- Grafana Labs. (2024). _MySQL Exporter Quickstart and Dashboard_. Grafana Labs. https://grafana.com/grafana/dashboards/14057-mysql/
   - This was used for the Grafana dashboard for MySQL Exporter.
 
 ### Other projects
 
-- Bert Van Vreckem. (2025). *bertvv/ansible-skeleton: An opinionated skeleton for Ansible projects with a development environment powered by Vagrant*. GitHub. https://github.com/bertvv/ansible-skeleton
-  - This was used to set up a local, Vagrant- and Ansible-ready virtual environment. A tailor-made version of this project (used in the HOGENT course module "[Infrastructure Automation](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193608&b=5&c=1)") has been used and altered (notably `Vagrantfile` and `scripts/control.sh`) for the purposes of this proof-of-concept.
+- Bert Van Vreckem. (2025). _bertvv/ansible-skeleton: An opinionated skeleton for Ansible projects with a development environment powered by Vagrant_. GitHub. https://github.com/bertvv/ansible-skeleton
+  - This was used to set up a local, Vagrant- and Ansible-ready virtual environment. A tailor-made version of this project (used in the HOGENT course module "[Infrastructure Automation](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193608&b=5&c=1)") has been used and altered for the purposes of this proof-of-concept. Notably `Vagrantfile` has been changed to allow the creation of VMs with multiple network interfaces, and `scripts/control.sh` to automatically accept SSH host key fingerprints for each host in `vagrant-hosts.yml`.
 
-- HoGentTIN. (2025a). *HoGentTIN/cybersecurity-advanced-lab-template: Cybersecurity Advanced - lab environment template*. GitHub. https://github.com/HoGentTIN/cybersecurity-advanced-lab-template
-  - The network diagram for the lab template of this course module was used and slightly altered as input (without corresponding deployment diagram) for this proof-of-concept.
+- HoGentTIN. (2025a). _HoGentTIN/cybersecurity-advanced-lab-template: Cybersecurity Advanced - lab environment template_. GitHub. https://github.com/HoGentTIN/cybersecurity-advanced-lab-template
+  - The network diagram for the lab template of this course module was used and slightly altered as input (without a corresponding deployment diagram) for this proof-of-concept.
 
-- HoGentTIN. (2025b). *HoGentTIN/infra-labs: Lab assignments for the Infrastructure Automation course*. GitHub. https://github.com/HoGentTIN/infra-labs
-  - The labs 2 and 3 of this course module were used as references for creating network- and deployment diagrams as input for this proof-of-concept.
+- HoGentTIN. (2025b). _HoGentTIN/infra-labs: Lab assignments for the Infrastructure Automation course_. GitHub. https://github.com/HoGentTIN/infra-labs
+  - The labs 2 and 3 of this course module were used as references for creating network- and deployment diagrams as input for this proof-of-concept (excluding `r001` and `srv003`).
 
 ## License
 

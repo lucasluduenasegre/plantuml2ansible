@@ -1,4 +1,4 @@
-# ansible/roles/role_monitoring_server/tasks/main.yml
+# ansible/roles/monitoring_server/tasks/main.yml
 ---
 - name: Include prometheus.prometheus.prometheus & grafana.grafana.grafana
   ansible.builtin.include_role:

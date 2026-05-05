@@ -1,4 +1,4 @@
-# ansible/roles/role_dns_server/tasks/main.yml
+# ansible/roles/dns_server/tasks/main.yml
 ---
 - name: Include bertvv.bind
   ansible.builtin.include_role:
@@ -11,7 +11,3 @@
     setype: dns_port_t
     state: present
   become: true
-
-- name: Include role_dns_client
-  ansible.builtin.include_role:
-    name: role_dns_client

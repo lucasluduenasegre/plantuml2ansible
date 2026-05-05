@@ -1,4 +1,4 @@
-# ansible/roles/role_dns_client/tasks/main.yml
+# ansible/roles/dns_client/tasks/main.yml
 ---
 - name: Replace the search domain in /etc/resolv.conf
   ansible.builtin.lineinfile:

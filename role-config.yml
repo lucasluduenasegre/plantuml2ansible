@@ -40,7 +40,7 @@ roles:
 
   # region dns_server_primary
   dns_server_primary:
-    fqcn: role_dns_server
+    fqcn: dns_server
     priority: 10
     galaxy_roles:
       - bertvv.bind
@@ -71,7 +71,7 @@ roles:
 
   # region dns_server_secondary
   dns_server_secondary:
-    fqcn: role_dns_server # Same as dns_server_primary, as it's virtually the same role with just different host_vars
+    fqcn: dns_server # Same as dns_server_primary, as it's virtually the same role with just different host_vars
     priority: 10
     galaxy_roles:
       - bertvv.bind
@@ -101,7 +101,7 @@ roles:
 
   # region web_server
   web_server:
-    fqcn: role_web_server
+    fqcn: web_server
     priority: 10
     galaxy_roles:
       - bertvv.httpd
@@ -136,7 +136,7 @@ roles:
 
   # region dns_client
   dns_client:
-    fqcn: role_dns_client
+    fqcn: dns_client
     priority: 20
     depends_on:
       - dns_server_primary
@@ -147,7 +147,7 @@ roles:
 
   # region monitoring_server
   monitoring_server:
-    fqcn: role_monitoring_server
+    fqcn: monitoring_server
     priority: 20
     depends_on:
       - dns_server_primary
@@ -248,4 +248,4 @@ roles:
       rhbase_firewall_allow_ports:
         - 9100/tcp
       node_exporter_port: 9100
-  # endregionI
+  # endregion
