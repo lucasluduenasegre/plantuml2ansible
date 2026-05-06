@@ -112,37 +112,45 @@ naming the output directory. This name should match the deployment diagram's.
 Network definition
 
 Format: network <network_name> {
-        ...
+          address = <network_address>/<prefix_length>
+          color = <color_value>
+        ... 
         }
+
+Notes:
+- Only IPv4 is supported when defining network addresses.
+- "color" is solely a visual attribute that will be rendered
+  by PlantUML but ignored by the converter. See the following
+  link for reading material on styling elements with colors:
+    - https://plantuml.com/color
 '/
 network test.lan {
-  /'
-  Subnet definition
-
-  Format: address = <network-address>/<prefix-length>
-
-  Note: Only IPv4 is supported when defining network addresses.
-  '/
   address = "172.26.0.0/24"
 
   /'
   Host definition
-
-  Format: <host_identifier> [address = <ipv4_address>, description = <description>, cpus = <amt_cores>, memory = <amt_gb_ram>, managed = <true|false>]
-
+  
+  Format: <host_identifier> [address = <ipv4_address>, description = <description>, cpus = <amt_cores>, memory = <amt_gb_ram>, managed = <true|false>, shape = <shape>, color = <color_value>]
+  
   Notes:
-  - The only mandatory attribute is "address", all others are optional. Only IPv4
-    is supported when defining IP addresses.
-  - By default the <description> attribute will be used as the resulting hostname;
-    <host_identifier> is the fallback if <description> is unused.
-  - Underscores in the hostname will be converted to hyphens, due to Unix conventions.
-  - Hosts with the "managed = false" flag will be rendered by PlantUML, but ignored
-    by the converter.
+  - The only mandatory attribute is "address", all others are optional.
+    Only IPv4 is supported when defining IP addresses.
+  - By default the <description> attribute (which is rendered by PlantUML)
+    will be used as the resulting hostname; <host_identifier> is the
+    fallback if <description> is unused.
+  - Underscores in the hostname will be converted to hyphens, due to 
+    Unix conventions.
+  - Hosts with the "managed = false" flag will be ignored by the converter
+    but still rendered by PlantUML.
+  - Like "color", "shape" is a purely visual attribute and will ignored by
+    the converter. See the following link for reading material on styling
+    elements with shapes (based on deployment diagram objects):
+      - https://plantuml.com/deployment-diagram
   '/
-  unmanaged_router [address = "172.26.0.254", managed = false]
-  dns [description = "dns", address = "172.26.0.20"]
-  monitoring [description = "monitoring", address = "172.26.0.30", cpus = 2, memory = 2048]
-  web [description = "web", address = "172.26.0.10"]
+  unmanaged_router [address = "172.26.0.254", managed = false, shape = node, color = LightSalmon]
+  dns [description = "dns", address = "172.26.0.20", shape = node]
+  monitoring [description = "monitoring", address = "172.26.0.30", cpus = 2, memory = 2048, shape = node]
+  web [description = "web", address = "172.26.0.10", shape = node]
 }
 
 /'
@@ -153,9 +161,10 @@ covered by the converter.
 '/
 network unmanaged.lan {
   address = "172.26.10.0/24"
+  color = LightSalmon
 
-  unmanaged_router [address = "172.26.10.254", managed = false]
-  unmanaged_workstation [address = "172.26.10.128", managed = false]
+  unmanaged_router [address = "172.26.10.254", managed = false, shape = node, color = LightSalmon]
+  unmanaged_workstation [address = "172.26.10.128", managed = false, shape = node, color = LightSalmon]
 }
 
 @endnwdiag
@@ -163,7 +172,7 @@ network unmanaged.lan {
 
 The PlantUML code above will generate the following image:
 
-![](https://www.plantuml.com/plantuml/svg/dLJ1ZkCs3BthAuZf8PV4kQU3O5iKxHwwnQBedeeYK2mw9Y9BNf5ArXZClrTInlKOxY7PN6I8x_7HZy_vmAA3nCw28Ci1tKLjL-eNqgUWEt2wGp3Oa2CXxvJwrOTEomucshEvOGyPkrVg3o-u0sh0UJ3lsn03zrXJGsZM82r2GnR7KcGqe1aqDDhQewxFqFYWKfdSgQ1zb3vAwXcm5X-62lvgYM-zkVNH6aYZrMq1EvIh3-TnWXLNQhLLQWMVz1a1TOBLlkkzGoVGOm3d3K9qz3MYOXHWx7NGIGUgJFiS0ze1BiHHspLSlLi9jFg2eDq0s3HO2tXNj1EHCIYBZO1u27Hgnx6pXzdVZvvbvcjsZNTg0pyF-Lv7AybPv3fGdn5xk9ArSCJHgA8Ka1Cm6zIcXjc97zLpVZoGGIVPwh07Ak39LshchOlzBlUjqW1VdC70jK-zWLnXZit_cw7sxe91qEJtQuU-HSThC151V6f0tsu8bzjpDQMccBmSKFDyeBog0ZMES_4fdK_meXIaNt8l7tzwEqzclXnrfjK-XuHRY9NBajT2ItBvc5X7SkQ0tteV1CEybcSwr9RIu_yK64Covj07wdGOve3ozbFNLtLxnyux4X_o4b_kbPeuRuftALtnMDnCvzC3MWD_jKit5agBMjORntijgSyxsuZVPFjpGjpjY-3nJ-Ed4FoLeOiieErL3moz9oVG1D_1x7jQmp4ArDhbEB8C5WteklR1P2F5AoY_LgJdtNPR1yqjcewSgKuaRJnMvBUVhNRovTFl7qdgjgKp1lujai6jrOEFydPKhNHsol0YljKoOvlD_XvSpddolPgyBynojGoJchP-7-CzOP4OsFpzGx9Bst_U-BFCFqOj8NYSEbM_iqDEM3NBvwFakQxALtSkumCw4plxBm00)
+![](https://www.plantuml.com/plantuml/svg/fLRVRzn447xtNp7oInCfyIL7W2g4g224G0gbKbjuYD1fxPqxBrdlcjtnNIte_ywCVvnzv58YoDDvVdpVUEQRSLv5Ke7SJXkr0S98AtJRPF4Y-OuDGLNWL8MWSMsS8UDTadplGwNe6WuoRtGVlfBmsoHvxGclmQp1UT1p91CXrbYOjK5z1bGYh8t5qTL4rA0YA5WhQtDLFC3QXuJTncswQDzGtH1Z1Yp8XpQ3TwM9FNOiVMCrS7L5sGLhhArlAtGq5l4YPicBHI8l-1ffvyF3qNTpW-zc-D6_5loPmFvFQHqmHlXw2XfCjukREZ3eXvL5jw7oTfPLUEk3v7G_Lbjb6vpyMPR1_k5ZtyLudPp3pywsyEERxLNNlwQkVI3Ki2lH3VMxpLZqM1d6Z3FJZYZjyhn5Xb6mDR5H5XHHC7b325GgWfsn5dA4W4vZG9q0v2syiShH-v_kW0F1R9ndZzYblOLtMmo48OEtYFqmlRL-nzLmjZMk6nyZAiqc6Gm6mypUGQJMYWqjodmYqrFPjoTUTpquXvAeZjUBHIqrD9ND2byjkX2PuVYw8jgC8sGwiwcabryki-KNsKLsiLXUfGaxUUW0F_X8yvc3T7oS-qt9tfNHw4WK6cxXVZPdKs-lzaC-Ov1O15CBYdXdZ-miwgRBKHMj2XzG4YgiMB6ZTPElM91YLavjK8kTGeD_iVGZiZsMgaQnoWyn71NFR_qR35AHjhsJDH71CB1M99JJg4s4T7Y5z0oKjU2fn1111SxggbSsam4yItJid-jDwBzjnQiQIwA8mxxC2ZdPbQOe1NeKt5nkfrB1NfBZMH0yfc9eePPPoLv-TMHifWiMaEcIcFLXCHBKEC7k2tylPSHkM62SvEyfXaecoMiW3sLRb-WYAw51UHOwHZ4V-Z0dB7rJH7MZnWKtdMRUJJk5jLMRaUN9FUi8P14ZIUInnlLqT-O1nzK_WxGJK7S35DHDGDi-lW7AwPv_8XUwVrtqPwsv81skUg_k22Uvak5wT-HOWyz_nuBYgUZw4oTXoZmVCZcUBmH0uuP6hu9l20FS7piGoy-lk4l_6CcqVyvhd9RlpcnAUgjivPsiddOHxWylGSesnZlAT94UuWe48ndoWTlq26boFG7u6GEEjsOvkp3BYwkNZvbsc3-YODiJs9UFY_qeNyxXutweWl4QcyWfVkTa7pHo_P62ebupjO_HvCOQQi6lzpSagMIXQuiZIEHw8XThBQWupR3RnfZ1htA0DkYGWOKwzrJ2Bp9tHoBZv1l7D0nNoE0Ew-mnu4JK7fiyuXyDEhAjXEtvJ_j5S9uWnwJmMppwqPjzXAOYF_4bkXm_HN1CJCapvNhv__GwKNIT9YKwU8BdSldol_68JbwXq_q_Xty3)
 
 ### Deployment diagram (`@startuml`)
 
@@ -230,25 +239,25 @@ Role-to-role connections
 Note: Arrows must always point from left to right, but can be styled according to
       https://crashedmind.github.io/PlantUMLHitchhikersGuide/layout/layout.html
 
-Format: <network_identifier>.<host_identifier>.<role_identifier> --> <network_identifier>.<host_identifier>.<role_identifier>
+Format: <host_identifier>.<role_identifier> --> <host_identifier>.<role_identifier>
 '/
-dns.dns_client --> dns.dns_server_primary
+dns.dns_client -[#teal]-> dns.dns_server_primary
 
-monitoring.dns_client --> dns.dns_server_primary
-monitoring.monitoring_server --> dns.bind_exporter
-monitoring.monitoring_server --> dns.node_exporter
-monitoring.monitoring_server --> monitoring.node_exporter
-monitoring.monitoring_server --> web.mysqld_exporter
-monitoring.monitoring_server --> web.node_exporter
+monitoring.dns_client -[#teal]-> dns.dns_server_primary
+monitoring.monitoring_server -[#coral]-> dns.bind_exporter
+monitoring.monitoring_server -[#coral]-> dns.node_exporter
+monitoring.monitoring_server -[#coral]-> monitoring.node_exporter
+monitoring.monitoring_server -[#coral]-> web.mysqld_exporter
+monitoring.monitoring_server -[#coral]-> web.node_exporter
 
-web.dns_client --> dns.dns_server_primary
+web.dns_client -[#teal]-> dns.dns_server_primary
 
 @enduml
 ```
 
 This code will render the following image:
 
-![](https://www.plantuml.com/plantuml/svg/dLHDZ-Cs3BthLn1poMNYtAU3O5iKxHwwnQBed0F5ecCYCkKLgMIDnVxtciY7n_0bKr-KYE_nqKzF_YJgivOkWgBe3ldaDYltE_b3zXsmxn02DiIabDYvFrBklBx0H7iD5-pEi5ld_awABq0DS8BmlWq9I8yrDOJX6RH5Q2ZYhLG40tW13usFSU_h8pGfkx5CV30qfA9zKGYKiTQKXmh-RKaklQLD9GRelDQjWO5HpoaVRnEif7AhZNCh-EAF2EX7M9swFZ6oGeyPE0M4mlIje1DK4EnzzfeoL4RxMZB60KuanSTdE2TUARJ-XE1v06mQh1KIcpQCHC7i8ZOAcY3JeRsDRHwQlv-JwCnNSqrUt1f-6spVbwYZioXrfjuGMpXJZB37kr6cb556e1dK9b5puXVtQZzt593LhCvR80FZv2iryzO6A6nzAxU6DmwOfKuP1OYDUMz-dw5EVCAi6Epzsg5laUKPGa7x_yRq_O9WQo_Lb1ep6PO3UfaFP4TbK0WiLdmQroVuuHoCp-YUBV-aE4-cRTvqfgDzpIDk8MQRrxmQRPIpPMBjYSCEl_SfA-PvpMRQrP6GrIqBWdaqPjTdwdmUvW2mLvgw_dINT-mIawPiX_ZZKQc9SrLyIEcCUp0tn_Nf0rg3V8iBDnPAovhftSRxwIprTcPhJMkptnB2bniXju_6hpcdiq1NHC77iny4-aIiqEJKmUm-FSE-ADIUBOwYGxHBKTSf1pDIamDxe5NjvMMpgREN5aD77Ae3QLls5QNDr-XPtxxyzPcqRbiwOfO_2mNSH3-aejUbQhMBKuPVhv-Mzw6g5fckbi5RhxV_csmt8h1Kqoc1jRjiBMBdfdmyo7X7M6JhpflTYiSe5eyFKART3p8jQzKigO-IvZhEjXuq-HDoA5ty3m00)
+![](https://www.plantuml.com/plantuml/svg/dLJ1Rjms4BtpAmRkOIzUxTqrZBGesXoQ8YYQKr4ikEB86fZYA3D3RuGW_rwHpbOHr8Ctkd31UM_UyF5ntwXviJn4C5GxOdfsXvtxXVoZ-06I7n02TfJ8Y9Dplx8CtkvWeTs75-onO1-S-uCDxu0wI0pXspQae2Esr166Mx0UeQE8br9M3E0LF7G-nfDldw1ZSNEPqcD5SxOn6mGIR8rbQk2ldlIbj_QSOu31MzjNS48xipnT9jXfutO7vtRmpZyXe9zXBGyZ9qm68mea3WWvqSUCJj50SVJYZGMQGdkV1UC4pwJPnriuSzePzFuPmQS9iEkmDU1KjMUYehY8dO4n23tsbx6BXyNVjwosyhMufdTk3pzFPT_dQBEpgAtGM10FSAOOuOGNewgIeCx0Ob3FQiM97zrz-NcaWCcArV80LC6BhzIjMrVxK-dRp0DyI055MnPKe5IPb-R_pT1oUaOn3ELy_JJscFGMGaOmdXlGfnT4AksrML9JJTuEw7KzKBcg2Wr9I_5cNc_WitCmVuTTNVxak4vcsRpeB5TxBpDk8rOtQruhRPOhoy8wKGf7_3Io6CgwLcOwjf4msVyK56KsvZWA3LwcDQ2UVkdwnRsSSU14nb8kyVDhfHRELyLNAPtnLDsSrvihj2Rz63TkR9IsjQ9t6UzBJNsvixtnljXV4f9UNeHU_ZH-4k6pmf3LmCUpdnH6fcJG2G-mUa-tSCe6hKybZcfJB8-YRLb2CTBOGVrwir7l3eTMlFOO1agXUIJhywaXFhoFFjc7Tx-_9MlxdfvGzBTC0G_HJvpjwzBqDiGbmvluDjkCxVSFhy6Ld8UapU8zxF_-mT37V-O6jRBDb5ik_ohYjxnDVWgzPLdugnTm7RL6udhgKltE3YLlpIgjrvBNkgviNNSrRp25FCH_0G00)
 
 ### Role configuration
 
@@ -258,13 +267,13 @@ This code will render the following image:
 
 Copied (verbatim):
 
-- `Vagrantfile`
-  - File that describes the general provisioning of each host managed by Vagrant. The hosts in this environment will **only** use **"bento/almalinux-9"** as their base boxes.
+- **`Vagrantfile`**
+  - File that describes the general provisioning of each host managed by Vagrant. The hosts in this environment will **only** use **"bento/almalinux-9"** as their base box.
 
 Generated (based on diagram):
 
-- `vagrant-hosts.yml` (**without** `control`)
-  - File that defines each host, their hostname, IP address(es), and hardware specifications. Hosts with **multiple** IP addresses **can** be defined here.
+- **`vagrant-hosts.yml`** (**without** `control`)
+  - File that defines each managed host listed in the network diagram, their hostname, IP address(es), and hardware specifications. Hosts with **multiple** IP addresses **can** be defined here.
 
 <!--TODO-->
 
@@ -273,28 +282,29 @@ Generated (based on diagram):
 Copied (verbatim):
 
 - **`Vagrantfile`**
-- `scripts/`
-  - Provisioning scripts for the Ansible `control` node.
-- `ansible/roles/<role_name>/` (for each defined role in the deployment diagram)
+- **`scripts/`**
+  - Provisioning scripts (`scripts/control.sh` and `scripts/util.sh`) for the Ansible `control` node.
+- **`ansible/roles/<role_name>/`** (for each defined role in the deployment diagram)
   - Predefined (custom) Ansible roles, which correspond to the FQCN (Fully Qualified Collection Name) of a role entry in `role-config.yml`.
-- `ansible/files/grafana/dashboards/<grafana_dashboard>.json` (for each defined exporter role in the deployment diagram)
+- **`ansible/files/grafana/dashboards/<grafana_dashboard>.json`** (for each defined exporter role in the deployment diagram)
   - Monitoring dashboards to be provisioned for the Prometheus + Grafana monitoring stack (deployed using the role `monitoring_server`).
-- `ansible/files/db.sql` (when `role_web_server` is defined in the deployment diagram)
+- **`ansible/files/db.sql`** (when `role_web_server` is defined in the deployment diagram)
   - Very small and simple MySQL database.
-- `ansible/files/test.php` (when `role_web_server` is defined in the deployment diagram)
+- **`ansible/files/test.php`** (when `role_web_server` is defined in the deployment diagram)
   - Simple PHP page that queries the afforementioned (local) database.
 
 Generated (based on diagrams):
 
-- `vagrant-hosts.yml` (**including** `control`)
-- Inventory file (`ansible/inventory.yml`)
-  - Similar to `vagrant-hosts.yml`; defines the managed hosts (and corresponding IP addresses) which will be configured by Ansible.
-- `ansible/site.yml`
-  - The main playbook of the Ansible environment, assigning each role per host (as defined on the deployment diagram), as well as general prerequisites for all hosts.
-- `ansible/host_vars/<hostname>.yml` (for each defined host in the deployment diagram)
-  - Variables (mostly) derived from information on the deployment diagram for configuring the roles on each defined host.
-- `ansible/requirements.yml`
+- **`vagrant-hosts.yml`** (**including** `control`)
+  - Only hosts with **single** IP addresses can be defined here.
+- **`ansible/inventory.yml`**
+  - Similar to `vagrant-hosts.yml`; defines each managed hosts (and corresponding IP addresses) listed in the network diagram, which will be configured by Ansible. Some Vagrant-specific variables are also defined here.
+- **`ansible/site.yml`**
+  - The main playbook of the Ansible environment, assigning the roles listed for each host (as defined in the deployment diagram), as well as general prerequisites for all hosts.
+- **`ansible/requirements.yml`**
   - File describing the required roles and collections to be downloaded from Ansible Galaxy, mostly as dependencies for the predefined roles.
+- **`ansible/host_vars/<hostname>.yml`** (for each defined host in the deployment diagram)
+  - (Role-specific) variables for each managed host to be configured by Ansible, mainly derived from information in both diagrams (network/IP addresses, hostnames, asset paths, ...).
 
 <!--TODO-->
 
