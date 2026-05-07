@@ -22,14 +22,16 @@ Notes:
 <host_identifier> is the fallback if <description> is unused.
 - Underscores in the hostname will be converted to hyphens, due to Unix conventions.
 
-Format: node <host_identifier> as <description>
+Format:
+node <host_identifier> as <description>
 '/
 node dns as "dns" {
 
     /'
     Role definition
 
-    Format: component <role_identifier> as <role_name>
+    Format:
+    component <role_identifier> as <role_name>
     '/
     component bind_exporter
     component dns_client
@@ -56,7 +58,8 @@ Role-to-role connections
 Note: Arrows must always point from left to right, but can be styled according to
       https://crashedmind.github.io/PlantUMLHitchhikersGuide/layout/layout.html
 
-Format: <host_identifier>.<role_identifier> --> <host_identifier>.<role_identifier>
+Format:
+<host_identifier>.<role_identifier> --> <host_identifier>.<role_identifier>
 '/
 dns.dns_client -[#teal]-> dns.dns_server_primary
 

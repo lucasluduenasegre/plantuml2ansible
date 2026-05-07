@@ -2,35 +2,36 @@
 network internal-company-lan {
     address = "172.30.0.0/16"
 
-    companyrouter [address = "172.30.255.254", memory = 1024]
-    dns [address = "172.30.0.4", memory = 256]
-    web [address = "172.30.0.10", memory = 1024]
-    database [address = "172.30.0.15", memory = 256]
-    employee [address = "172.30.0.123", memory = 256]
+    companyrouter [address = "172.30.255.254", memory = 1024, shape = node]
+    dns [address = "172.30.0.4", memory = 256, shape = node]
+    web [address = "172.30.0.10", memory = 1024, shape = node]
+    database [address = "172.30.0.15", memory = 256, shape = node]
+    employee [address = "172.30.0.123", memory = 256, shape = node]
 }
 
 network fake-internet {
     address = "192.168.62.0/24"
 
-    companyrouter [address = "192.168.62.253"]
-    isprouter [address = "192.168.62.254", memory = 256]
-    your_laptop [description = "your-laptop", address = "dhcp", managed = false]
-    homerouter [address = "192.168.62.42", memory = 1024]
+    companyrouter [address = "192.168.62.253", shape = node]
+    isprouter [address = "192.168.62.254", memory = 256, shape = node]
+    your_laptop [description = "your-laptop", address = "dhcp", managed = false, shape = node, color = LightSalmon]
+    homerouter [address = "192.168.62.42", memory = 1024, shape = node]
 }
 
 network employee-home-lan {
     address = "172.10.10.0/24"
 
-    homerouter [address = "172.10.10.254"]
-    remote_employee [description = "remote-employee", address = "172.10.10.123", memory = 1024]
+    homerouter [address = "172.10.10.254", shape = node]
+    remote_employee [description = "remote-employee", address = "172.10.10.123", memory = 1024, shape = node]
 }
 
 network virtualbox_nat {
     address = "10.0.2.0/24"
+    color = LightSalmon
 
-    isprouter [address = "10.0.2.15", managed = false]
-    virtualbox_nat_gateway [address = "10.0.2.2", managed = false]
-    virtualbox_nat_dns [address = "10.0.2.3", managed = false]
+    isprouter [address = "10.0.2.15", managed = false, shape = node]
+    virtualbox_nat_gateway [address = "10.0.2.2", managed = false, shape = node, color = LightSalmon]
+    virtualbox_nat_dns [address = "10.0.2.3", managed = false, shape = node, color = LightSalmon]
 }
 
 real_internet [shape = cloud]

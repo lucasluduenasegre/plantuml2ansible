@@ -11,15 +11,16 @@ naming the output directory. This name should match the deployment diagram's.
 /'
 Network definition
 
-Format: network <network_name> {
-          address = <network_address>/<prefix_length>
-          color = <color_value>
-        ... 
-        }
+Format:
+network <network_name> {
+  address = <network_address>/<prefix_length>
+  color = <color_value>
+... 
+}
 
 Notes:
 - Only IPv4 is supported when defining network addresses.
-- "color" is solely a visual attribute that will be rendered
+- "color" is an optional, visual attribute that will be rendered
   by PlantUML but ignored by the converter. See the following
   link for reading material on styling elements with colors:
     - https://plantuml.com/color
@@ -30,7 +31,8 @@ network test.lan {
   /'
   Host definition
   
-  Format: <host_identifier> [address = <ipv4_address>, description = <description>, cpus = <amt_cores>, memory = <amt_gb_ram>, managed = <true|false>, shape = <shape>, color = <color_value>]
+  Format:
+  <host_identifier> [address = <ipv4_address>, description = <description>, cpus = <amt_cores>, memory = <amt_gb_ram>, managed = <true|false>, shape = <shape>, color = <color_value>]
   
   Notes:
   - The only mandatory attribute is "address", all others are optional.

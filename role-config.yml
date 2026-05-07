@@ -2,20 +2,41 @@
 # Maps simplified role identifiers (as used in deployment diagrams) to their
 # fully qualified Ansible role names and associated metadata.
 #
-# Keys per role:
-#   fqcn (required)         Fully qualified collection name used in playbooks
-#   priority (optional)     Intra-host role execution order — lower runs first, default 100
-#   depends_on (optional)   Inter-host ordering — list of role identifiers that must be
-#                           applied on another host before this role's host play runs
-#   galaxy_roles (optional) Ansible Galaxy roles to install
-#   galaxy_collections (optional) Ansible Galaxy collections to install
-#   packages (optional)     Packages installed by bertvv.rh-base for this role
-#   host_vars (optional)    Variables written to the host's host_vars file.
-#                           Sentinels prefixed with __DIAGRAM_ are resolved at build time.
-#   grafana_dashboard (optional) Dashboard metadata contributed to grafana_dashboards
-#                           if this role is present in the diagram. Not written to this
-#                           role's host — consumed by the grafana role only.
-
+# Notes:
+#   - "fqcn" (the "Fully Qualified Collection Name") is the name that will be used
+#     in the roles section of a host's play in the playbook. This is also the only
+#     required key, all others are optional.
+#   - "priority" directs the execution order of the role within a host's play.
+#     Roles with lower priority values run first, and 100 is the default value.
+#   - "depends_on" directs which roles must be applied on other hosts before this
+#     role's host play runs. For example, hosts with the "dns_server_*" role must
+#     complete their play before the hosts with "dns_client".
+#   - "galaxy_roles" and "galaxy_collections" represent the Ansible Galaxy roles
+#     and collections that must be installed on the Ansible control node prior
+#     to running the playbook.
+#   - "assets" represent the files under the "assets/" directory that are to be
+#     copied to the Ansible control node prior to running the playbook.
+#   - "host_vars" are the variables (in YAML format) written to the host's 
+#     host_vars file. Sentinels prefixed with __DIAGRAM_ are placeholders which 
+#     will be resolved by the converter at build time, derived from
+#     diagram information.
+#
+# Format:
+# roles:
+#   <role_identifier>:
+#     fqcn: <fqcn>
+#     priority: <priority>
+#     depends_on:
+#       - <role_identifier>
+#       ...
+#     galaxy_roles:
+#       - <ansible_galaxy_role_name>
+#     galaxy_collections:
+#       - <ansible_galaxy_collection_name>
+#     host_vars:
+#       <host_vars_in_yaml_format>
+#   ...   
+---
 roles:
   # region dhcp_server
   dhcp_server:
@@ -52,8 +73,7 @@ roles:
         - 9119/tcp
       bind_acls:
         - name: acl1
-          match_list:
-            - 172.16.0.0/16
+          match_list: __DIAGRAM_BIND_ACL_SUBNETS__
       bind_allow_query:
         - any
       bind_listen_ipv4:
@@ -83,8 +103,7 @@ roles:
         - 9119/tcp
       bind_acls:
         - name: acl1
-          match_list:
-            - 172.16.0.0/16
+          match_list: __DIAGRAM_BIND_ACL_SUBNETS__
       bind_allow_query:
         - any
       bind_listen_ipv4:
@@ -97,41 +116,6 @@ roles:
         - 1.1.1.1
       bind_recursion: true
       bind_zones: __DIAGRAM_BIND_ZONES_SECONDARY__
-  # endregion
-
-  # region web_server
-  web_server:
-    fqcn: web_server
-    priority: 10
-    galaxy_roles:
-      - bertvv.httpd
-    assets:
-      - ansible/files/ca.crt
-      - ansible/files/ca.key
-      - ansible/files/db.sql
-      - ansible/files/test.php
-    host_vars:
-      rhbase_firewall_allow_ports:
-        - 80/tcp
-        - 443/tcp
-      rhbase_install_packages:
-        - httpd
-        - mariadb-server
-        - php-fpm
-        - php-mysqlnd
-        - python3-PyMySQL
-      rhbase_repositories:
-        - epel-release
-      rhbase_start_services:
-        - httpd
-        - mariadb
-      rhbase_selinux_booleans:
-        - httpd_can_network_connect
-      httpd_ssl_certificate_key_file: "ca.key"
-      httpd_ssl_certificate_file: "ca.crt"
-      db_user: "appuser"
-      db_name: "appdb"
-      db_password: "let me in"
   # endregion
 
   # region dns_client
@@ -248,4 +232,39 @@ roles:
       rhbase_firewall_allow_ports:
         - 9100/tcp
       node_exporter_port: 9100
+  # endregion
+
+  # region web_server
+  web_server:
+    fqcn: web_server
+    priority: 10
+    galaxy_roles:
+      - bertvv.httpd
+    assets:
+      - ansible/files/ca.crt
+      - ansible/files/ca.key
+      - ansible/files/db.sql
+      - ansible/files/test.php
+    host_vars:
+      rhbase_firewall_allow_ports:
+        - 80/tcp
+        - 443/tcp
+      rhbase_install_packages:
+        - httpd
+        - mariadb-server
+        - php-fpm
+        - php-mysqlnd
+        - python3-PyMySQL
+      rhbase_repositories:
+        - epel-release
+      rhbase_start_services:
+        - httpd
+        - mariadb
+      rhbase_selinux_booleans:
+        - httpd_can_network_connect
+      httpd_ssl_certificate_key_file: "ca.key"
+      httpd_ssl_certificate_file: "ca.crt"
+      db_user: "appuser"
+      db_name: "appdb"
+      db_password: "let me in"
   # endregion

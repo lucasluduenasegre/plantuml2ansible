@@ -794,9 +794,25 @@ def build_host_vars(host_roles, role_config, networks, nodes=None, connections=N
         return zones
 
     def _resolve_sentinel(value, hostname):
+        # Recurse into lists and dicts before attempting sentinel matching.
+        if isinstance(value, list):
+            return [_resolve_sentinel(item, hostname) for item in value]
+        if isinstance(value, dict):
+            return {k: _resolve_sentinel(v, hostname) for k, v in value.items()}
+
         match value:
-            case "__DIAGRAM_DNS_SECONDARY_IPS__":
-                return dns_secondary_ips
+            case "__DIAGRAM_BIND_ACL_SUBNETS__":
+                # Return a CIDR string for every network in the diagram,
+                # e.g. ["172.26.0.0/24", "10.0.10.0/24"]
+                return [
+                    str(
+                        ipaddress.IPv4Network(
+                            f"{net_data['subnet']}/{net_data['netmask']}"
+                        )
+                    )
+                    for net_data in networks.values()
+                    if net_data.get("subnet") and net_data.get("netmask")
+                ]
 
             case "__DIAGRAM_BIND_ZONES_PRIMARY__":
                 return _build_bind_zones_primary(hostname, networks)
@@ -817,6 +833,9 @@ def build_host_vars(host_roles, role_config, networks, nodes=None, connections=N
                         and to_host in host_primary_ip
                     )
                 return dns_server_ips  # fallback when no connection data is present
+
+            case "__DIAGRAM_DNS_SECONDARY_IPS__":
+                return dns_secondary_ips
 
             case "__DIAGRAM_SCRAPE_CONFIGS__":
                 # When connection data is available, filter scrape targets to

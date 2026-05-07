@@ -1,18 +1,18 @@
 # PlantUML2Ansible
 
-## Table of Contents
-
-<!--TODO-->
-
 ## Context
 
-PlantUML2Ansible is a "work in progress" and proof-of-concept converter that converts network and deployment diagrams (created using PlantUML) to IaC and configuration management supported environments (provided by Vagrant & Ansible, respectively). This solution is developed as part of a bachelor's thesis within the context of Applied IT at HOGENT (and its relevant course modules such as "[Cybersecurity Advanced](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193610&b=5&c=1)" and "[Infrastructure Automation](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193608&b=5&c=1)".
+PlantUML2Ansible is a "work in progress" and proof-of-concept converter that converts network and deployment diagrams (created using PlantUML) to IaC and configuration management supported environments (provided by Vagrant & Ansible, respectively).
 
-<!--TODO-->
+This solution is developed as part of a bachelor's thesis within the context of Applied IT at HOGENT (and its relevant course modules such as "[Cybersecurity Advanced](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193610&b=5&c=1)" and "[Infrastructure Automation](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193608&b=5&c=1)".
+
+<!--TODO: motivation-->
+
+Further clarification on the motivation, research, and code behind this project can be found on the thesis's [repository](https://github.com/lucasluduenasegre/latex-hogent-bachproef-nl-25-26-luduenasegrelucas).
 
 ## Limitations
 
-Since this project is a proof-of-concept, there are a number of noteworthy limitations (which will be referred to again later, in the relevant sections):
+Since this project is a proof-of-concept, there are a number of noteworthy limitations (which will be elaborated upon later, in the relevant sections):
 
 1. Only hosts/nodes within a **single network** can be defined in the deployment diagram when generating **both Vagrant and Ansible code**. The configuration of routers (as well as the more elaborate firewall rules that it implies) is a task that goes beyond the scope of this proof-of-concept, which is to demonstrate the possibility of converting UML diagrams to configuration management code. As such, each VM will have internet access through their unique NAT interface, provided by Vagrant.
 2. Multiple networks **can** be specified when **only generating Vagrant code** and as long as there are no hosts with more than **3** defined IP addresses. This is a technical limitation due to VirtualBox's maximum of 4 network interfaces, of which the first is reserved for the NAT interface Vagrant uses.
@@ -35,7 +35,7 @@ Since this project is a proof-of-concept, there are a number of noteworthy limit
 
 Ansible only runs on the `control` node VM and therefore does not have to be installed on the host machine.
 
-To set up the converter, execute the following commands on your hostmachine's terminal:
+To set up the converter, clone the repository, create a virtual Python environment, and install the Python dependencies:
 
 ```bash
 git clone git@github.com:lucasluduenasegre/plantuml2ansible.git
@@ -45,7 +45,9 @@ source .venv/bin/activate # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## Installation
+## Basic Example
+
+<!--TODO-->
 
 ## Usage
 
@@ -61,9 +63,9 @@ python plantuml2ansible.py [--nwdiag] <nwdiag_path> [--uml] <uml_path> [--role-c
 
 This is the main use case of this tool, and will set up a Vagrant environment as well as a rudimentary yet completely Ansible-supported environment (including a `control` node) based on predefined roles assigned to the hosts.
 
-Only hosts/nodes within a **single network** can be defined in the deployment diagram for this use case. The configuration of routers (as well as the more elaborate firewall rules that it implies) is a task that goes beyond the scope of this proof-of-concept, which is to demonstrate the possibility of converting UML diagrams to configuration management code. As such, each VM will have internet access through their unique NAT interface, provided by Vagrant.
-
 The `control` node's IP address will, by default, be the broadcast address of the network minus two.
+
+Only hosts/nodes within a **single network** can be defined in the deployment diagram for this use case. The configuration of routers (as well as the more elaborate firewall rules that it implies) is a task that goes beyond the scope of this proof-of-concept, which is to demonstrate the possibility of converting UML diagrams to configuration management code. As such, each VM will have internet access through their unique NAT interface, provided by Vagrant.
 
 By default, the converter will use `role-config.yml` (in the same directory as the script) as the configuration file for predefined roles (which will be covered later). A custom role configuration file can optionally be provided.
 
@@ -92,7 +94,7 @@ In PlantUML, single-line comments are denoted using `'` or `//` (with no precedi
 
 ### Network diagram (`@startnwdiag`)
 
-The network diagram illustrates the logical topology of networks and hardware elements (in this case Vagrant VMs) in a given environment, along with their respective network and IP addresses.
+The network diagram illustrates the logical topology of networks and hardware elements (in this case Vagrant VMs) in a given environment, along with their respective network/IP addresses and optional attributes such as hardware specifications (amount of RAM and CPU cores).
 Multiple networks **can** be defined for IaC-only supported environments, as long as there are no hosts with more than **3** defined IP addresses.
 
 Here follows an example of a possible network diagram:
@@ -111,15 +113,16 @@ naming the output directory. This name should match the deployment diagram's.
 /'
 Network definition
 
-Format: network <network_name> {
-          address = <network_address>/<prefix_length>
-          color = <color_value>
-        ... 
-        }
+Format:
+network <network_name> {
+  address = <network_address>/<prefix_length>
+  color = <color_value>
+... 
+}
 
 Notes:
 - Only IPv4 is supported when defining network addresses.
-- "color" is solely a visual attribute that will be rendered
+- "color" is an optional, visual attribute that will be rendered
   by PlantUML but ignored by the converter. See the following
   link for reading material on styling elements with colors:
     - https://plantuml.com/color
@@ -130,7 +133,8 @@ network test.lan {
   /'
   Host definition
   
-  Format: <host_identifier> [address = <ipv4_address>, description = <description>, cpus = <amt_cores>, memory = <amt_gb_ram>, managed = <true|false>, shape = <shape>, color = <color_value>]
+  Format:
+  <host_identifier> [address = <ipv4_address>, description = <description>, cpus = <amt_cores>, memory = <amt_gb_ram>, managed = <true|false>, shape = <shape>, color = <color_value>]
   
   Notes:
   - The only mandatory attribute is "address", all others are optional.
@@ -172,7 +176,7 @@ network unmanaged.lan {
 
 The PlantUML code above will generate the following image:
 
-![](https://www.plantuml.com/plantuml/svg/fLRVRzn447xtNp7oInCfyIL7W2g4g224G0gbKbjuYD1fxPqxBrdlcjtnNIte_ywCVvnzv58YoDDvVdpVUEQRSLv5Ke7SJXkr0S98AtJRPF4Y-OuDGLNWL8MWSMsS8UDTadplGwNe6WuoRtGVlfBmsoHvxGclmQp1UT1p91CXrbYOjK5z1bGYh8t5qTL4rA0YA5WhQtDLFC3QXuJTncswQDzGtH1Z1Yp8XpQ3TwM9FNOiVMCrS7L5sGLhhArlAtGq5l4YPicBHI8l-1ffvyF3qNTpW-zc-D6_5loPmFvFQHqmHlXw2XfCjukREZ3eXvL5jw7oTfPLUEk3v7G_Lbjb6vpyMPR1_k5ZtyLudPp3pywsyEERxLNNlwQkVI3Ki2lH3VMxpLZqM1d6Z3FJZYZjyhn5Xb6mDR5H5XHHC7b325GgWfsn5dA4W4vZG9q0v2syiShH-v_kW0F1R9ndZzYblOLtMmo48OEtYFqmlRL-nzLmjZMk6nyZAiqc6Gm6mypUGQJMYWqjodmYqrFPjoTUTpquXvAeZjUBHIqrD9ND2byjkX2PuVYw8jgC8sGwiwcabryki-KNsKLsiLXUfGaxUUW0F_X8yvc3T7oS-qt9tfNHw4WK6cxXVZPdKs-lzaC-Ov1O15CBYdXdZ-miwgRBKHMj2XzG4YgiMB6ZTPElM91YLavjK8kTGeD_iVGZiZsMgaQnoWyn71NFR_qR35AHjhsJDH71CB1M99JJg4s4T7Y5z0oKjU2fn1111SxggbSsam4yItJid-jDwBzjnQiQIwA8mxxC2ZdPbQOe1NeKt5nkfrB1NfBZMH0yfc9eePPPoLv-TMHifWiMaEcIcFLXCHBKEC7k2tylPSHkM62SvEyfXaecoMiW3sLRb-WYAw51UHOwHZ4V-Z0dB7rJH7MZnWKtdMRUJJk5jLMRaUN9FUi8P14ZIUInnlLqT-O1nzK_WxGJK7S35DHDGDi-lW7AwPv_8XUwVrtqPwsv81skUg_k22Uvak5wT-HOWyz_nuBYgUZw4oTXoZmVCZcUBmH0uuP6hu9l20FS7piGoy-lk4l_6CcqVyvhd9RlpcnAUgjivPsiddOHxWylGSesnZlAT94UuWe48ndoWTlq26boFG7u6GEEjsOvkp3BYwkNZvbsc3-YODiJs9UFY_qeNyxXutweWl4QcyWfVkTa7pHo_P62ebupjO_HvCOQQi6lzpSagMIXQuiZIEHw8XThBQWupR3RnfZ1htA0DkYGWOKwzrJ2Bp9tHoBZv1l7D0nNoE0Ew-mnu4JK7fiyuXyDEhAjXEtvJ_j5S9uWnwJmMppwqPjzXAOYF_4bkXm_HN1CJCapvNhv__GwKNIT9YKwU8BdSldol_68JbwXq_q_Xty3)
+![](https://www.plantuml.com/plantuml/svg/fLPHRzj637xNho3qaWH8vCJBjYBBWcuOXWt8kW9jjuTWC4uwshhbTAVTKNQDhVzzvCcAx4RfWXKeK9daVH-F_CZBoqWgaDjeerP066c1RftDZh8Vs11K0qur21gNnXaotcNPZpuqYgxWuEIrxiCN4dwJPQyyuHMO9JWFUX_9H8WjLcPfK9y2rGXBOt5mTH4rg0WAbihQKbNtiFGXOxTngnJjEsexOio05VcmBU1jRMAF7MlVMGsSNLMdO8sjzTi67Gr97CKYEvfbSi5NI1iVxgVkbhcTxthtqLyB_iu0bDO1OuHlH-VET3ExRWE3lLzOT2kgRpYwyjO7YKqVYxMo7PUdA0h8FlHLYbVP6Vpgx1P-Vhs-JFNfsjO7GWsR6bsVdrn_I6f7Xx7Wata2pkMSSk1RkOUofx0siLCM554mPKS8L2k2ZR4MIeI0JcD0dG6KMtXjbQDtlzm21u9PESyUiKi9A-_MoCc40juWzWtprleDPyIdhN6fHOoeD9ka-1WCCti7aRPMR6XHUX2Pdkg-97nh080pg8dQU3MRjP93rzYYyiqiXKYVXYkBC0kE-AW3-SNNysB-LN5UdC_cbtd6Jcuim4y-qdvV0VZVq5k0wvhz2wFHaUWmtC3TNbTDkxvyQEafmyGgc5HNyUxzP6VLTkcCQcXH-O1oeC66TJbOL-M2PITcvTGAjTWfTFWF2pmYssEjMXIhV8XXKZ9_z7VO2KOAzrQ6GMJ3m5gHK8xDDX7otHNoKr3MWgSQGmGLy44aXRJWMT9Z_xxgXFxxhNXLPqaqSLYNlKIEDxMfQe4U9BSlk9EKmI3AOVW5ZwaOMgYbLp9ztqoqpQHW0HdtXLaU9YD1dHFiFl5taaPCpGBZ4jb0iSja5Bq6yb1lsnfTP2LqAB-5Zb7C-pxC2KjV5D7Te7B1pSUUfsxdiBHgDR0yEMb2a4OnaaHE5QwdkpNtE2o0KyYJWFfD06qNq6uVRm7MIiy_aWlTVuxwimOz8HqEUyefmd6ffBdUJQnayEMVM54y4Lr_OYcC9yzs9pcUTmH0vtQ5NWJVSLPmDxKYvbzUSfK-QiauVyvh78VlrgngUgDiuvsCddOHxWutGSusnfjaEiyFSGM2aGpvm6LwX3IwdW3yWW67NJFVsp3pyyiNZvasM3wYODiJs1UFa_qWx-Fk2JzKmR2FJUGZVkDa7ZHo_f62ebuphO_HbCOQse9VFkoGh961RYqE897pYPoijVp_sCCqZR60tsK1hT0X0mjrwQc6twJlZaJ6sNUEQHYkaiOTvjbZmB6eFNPbnBywT6ItAMpWF-a7mNc24hFAht7osTjxXiOaF_4MNGoF4Ko9ANkcN2y-JwyZHQeqgQI3QPwB-Ol_noCwUObEzty2_Wi0)
 
 ### Deployment diagram (`@startuml`)
 
@@ -205,14 +209,16 @@ Notes:
 <host_identifier> is the fallback if <description> is unused.
 - Underscores in the hostname will be converted to hyphens, due to Unix conventions.
 
-Format: node <host_identifier> as <description>
+Format:
+node <host_identifier> as <description>
 '/
 node dns as "dns" {
 
     /'
     Role definition
 
-    Format: component <role_identifier> as <role_name>
+    Format:
+    component <role_identifier> as <role_name>
     '/
     component bind_exporter
     component dns_client
@@ -239,7 +245,8 @@ Role-to-role connections
 Note: Arrows must always point from left to right, but can be styled according to
       https://crashedmind.github.io/PlantUMLHitchhikersGuide/layout/layout.html
 
-Format: <host_identifier>.<role_identifier> --> <host_identifier>.<role_identifier>
+Format:
+<host_identifier>.<role_identifier> --> <host_identifier>.<role_identifier>
 '/
 dns.dns_client -[#teal]-> dns.dns_server_primary
 
@@ -257,11 +264,127 @@ web.dns_client -[#teal]-> dns.dns_server_primary
 
 This code will render the following image:
 
-![](https://www.plantuml.com/plantuml/svg/dLJ1Rjms4BtpAmRkOIzUxTqrZBGesXoQ8YYQKr4ikEB86fZYA3D3RuGW_rwHpbOHr8Ctkd31UM_UyF5ntwXviJn4C5GxOdfsXvtxXVoZ-06I7n02TfJ8Y9Dplx8CtkvWeTs75-onO1-S-uCDxu0wI0pXspQae2Esr166Mx0UeQE8br9M3E0LF7G-nfDldw1ZSNEPqcD5SxOn6mGIR8rbQk2ldlIbj_QSOu31MzjNS48xipnT9jXfutO7vtRmpZyXe9zXBGyZ9qm68mea3WWvqSUCJj50SVJYZGMQGdkV1UC4pwJPnriuSzePzFuPmQS9iEkmDU1KjMUYehY8dO4n23tsbx6BXyNVjwosyhMufdTk3pzFPT_dQBEpgAtGM10FSAOOuOGNewgIeCx0Ob3FQiM97zrz-NcaWCcArV80LC6BhzIjMrVxK-dRp0DyI055MnPKe5IPb-R_pT1oUaOn3ELy_JJscFGMGaOmdXlGfnT4AksrML9JJTuEw7KzKBcg2Wr9I_5cNc_WitCmVuTTNVxak4vcsRpeB5TxBpDk8rOtQruhRPOhoy8wKGf7_3Io6CgwLcOwjf4msVyK56KsvZWA3LwcDQ2UVkdwnRsSSU14nb8kyVDhfHRELyLNAPtnLDsSrvihj2Rz63TkR9IsjQ9t6UzBJNsvixtnljXV4f9UNeHU_ZH-4k6pmf3LmCUpdnH6fcJG2G-mUa-tSCe6hKybZcfJB8-YRLb2CTBOGVrwir7l3eTMlFOO1agXUIJhywaXFhoFFjc7Tx-_9MlxdfvGzBTC0G_HJvpjwzBqDiGbmvluDjkCxVSFhy6Ld8UapU8zxF_-mT37V-O6jRBDb5ik_ohYjxnDVWgzPLdugnTm7RL6udhgKltE3YLlpIgjrvBNkgviNNSrRp25FCH_0G00)
+![](https://www.plantuml.com/plantuml/svg/dLJ1Rjms4BtpAmRkOIzUxTqrZBGesXoQ8YYQKr4ikEB86fZYA3D3RuGW_rwHpaOHr8Etlb3Wl3Tl_EPntwXviJn4C5GxOdfsXvtxXVoZ-06I7n02TfJ8Y9Dplx8CtkvWeTs75-onO1-S-uCDxu0wI0pX-pQae2Esr166Mx0UeQE8br9M3E0LF7G-nfDldw1ZSNEPqcD5SxOn6mGIR8rbQk2ldlIbj_QSOu31MzjNS48xipnT9jXfutO7vtRmpZyXe9zXBGyZ9qm68mea3WWvqSUCJj50SVJYZGMQGdkV1UC4pwJPnriuSzePzFuPmQS9iEkmDU1KjMUYehY8dO4n23tsbx6BXyNVjwosyhMufdTk3pzFvTxdQBEpgAtGM10FSAOOuOGNewgIeCx0Ob3FQiM97zrz-JnIm6J5Qda0gk35L-hMhQlzgVHjvW4-f82YBGigKAhCI_DlCxISdb4C0nX3Fuqz9hs5a16CvmRqwGMHIdjjlgN6LPEt0tfT3rHMLQ4XQIdUpESDV7OE0E2mgyUV7DV9B9SNdVAzhFTUPkn6i5xMp5RuBBbcdIY58tuQMGnbNIjp7Tj8cEm_2eeoctCSXGOlqnfGOxPq_U9U_i-14nbBMUJdrqejdA-Ahr8wuwawEfytLsXD-Z5ktTWeRMf5xpBUbvhyihUzyRxONrAINbw5NduuVXBXiyAGrS37ivyKHgPaq0aFi7fJjt3A1grF9P9gKomFesrPGZ7Is47zwyr6lJiSMl7QOnWeXUQHhC-dXlZmFlfa7zxz_fQixNjwGj7VCWKyH3znjgz7qziGbnnl8jniCxRVFy0hS2Nh8McpU0_xltymzF6VkK6jR3FbbkLVHVoUjybFeRSi2t_r0gwZraXSJrsg_xD3oLkpIkkrvBMkArVNhUODff27-2y0)
 
-### Role configuration
+### Role configuration (`role-config.yml`)
+
+There are a number of predefined roles that can be specified for each managed host in the deployment diagram. Much of the information required by each role (in the form of `host_vars`) will be derived from information gathered from the network and deployment diagrams.
+
+The roles are defined in a configuration file called `role-config.yml` (found in the same directory as `plantuml2ansible.py`), which looks like this:
+
+```yaml
+# role-config.yml
+# Maps simplified role identifiers (as used in deployment diagrams) to their
+# fully qualified Ansible role names and associated metadata.
+#
+# Notes:
+#   - "fqcn" (the "Fully Qualified Collection Name") is the name that will be used
+#     in the roles section of a host's play in the playbook. This is also the only
+#     required key, all others are optional.
+#   - "priority" directs the execution order of the role within a host's play.
+#     Roles with lower priority values run first, and 100 is the default value.
+#   - "depends_on" directs which roles must be applied on other hosts before this
+#     role's host play runs. For example, hosts with the "dns_server_*" role must
+#     complete their play before the hosts with "dns_client".
+#   - "galaxy_roles" and "galaxy_collections" represent the Ansible Galaxy roles
+#     and collections that must be installed on the Ansible control node prior
+#     to running the playbook.
+#   - "assets" represent the files under the "assets/" directory that are to be
+#     copied to the Ansible control node prior to running the playbook.
+#   - "host_vars" are the variables (in YAML format) written to the host's 
+#     host_vars file. Sentinels prefixed with __DIAGRAM_ are placeholders which 
+#     will be resolved by the converter at build time, derived from
+#     diagram information.
+#
+# Format:
+# roles:
+#   <role_identifier>:
+#     fqcn: <fqcn>
+#     priority: <priority>
+#     depends_on:
+#       - <role_identifier>
+#       ...
+#     galaxy_roles:
+#       - <ansible_galaxy_role_name>
+#     galaxy_collections:
+#       - <ansible_galaxy_collection_name>
+#     host_vars:
+#       <host_vars_in_yaml_format>
+#   ...   
+---
+roles:
+  dhcp_server:
+    fqcn: bertvv.dhcp
+    priority: 10
+    depends_on:
+      - dns_server_primary
+      - dns_server_secondary
+    galaxy_roles:
+      - bertvv.dhcp
+    host_vars:
+      rhbase_firewall_allow_services:
+        - dhcp
+      dhcp_global_default_lease_time: 14400
+      dhcp_global_max_lease_time: 14400
+      dhcp_global_domain_name: __DIAGRAM_NETWORK_NAME__
+      dhcp_global_broadcast_address: __DIAGRAM_BROADCAST__
+      dhcp_global_subnet_mask: __DIAGRAM_NETMASK__
+      dhcp_global_domain_name_servers: __DIAGRAM_DNS_SERVER_IPS__
+      dhcp_subnets: __DIAGRAM_SUBNETS__
+  # Other roles below
+```
+
+## Available roles
+
+The following subsections will highlight the core functionality of each predefined role. The FQCN (Fully Qualified Collection Name) of each role (which will be used in the playbook) will be displayed in the title of each section in a monospace typeface.
+
+### `dhcp_server`
+
+<!--TODO-->
+
+### `dns_server_primary` (BIND9)
+
+<!--TODO-->
+
+### `dns_server_secondary` (BIND9)
+
+<!--TODO-->
+
+### `dns_client`
+
+<!--TODO-->
+
+### `monitoring_server` (Grafana + Prometheus stack)
+
+<!--TODO-->
+
+### Prometheus exporters
+
+<!--TODO-->
+
+#### `apache_exporter`
+
+<!--TODO-->
+
+#### `bind_exporter`
+
+<!--TODO-->
+
+#### `mysqld_exporter`
+
+<!--TODO-->
+
+#### `node_exporter`
+
+<!--TODO-->
+
+### `web_server` (Apache + MariaDB stack)
+
+<!--TODO-->
 
 ## Output structure<!-- in `<output_directory>/<diagram_name>/` -->
+
+The following sections describe the file structure the converter will copy and generate, based on the employed use case.
 
 ### Network diagram only
 
@@ -275,8 +398,6 @@ Generated (based on diagram):
 - **`vagrant-hosts.yml`** (**without** `control`)
   - File that defines each managed host listed in the network diagram, their hostname, IP address(es), and hardware specifications. Hosts with **multiple** IP addresses **can** be defined here.
 
-<!--TODO-->
-
 ### Full mode (network + deployment diagram)
 
 Copied (verbatim):
@@ -285,13 +406,13 @@ Copied (verbatim):
 - **`scripts/`**
   - Provisioning scripts (`scripts/control.sh` and `scripts/util.sh`) for the Ansible `control` node.
 - **`ansible/roles/<role_name>/`** (for each defined role in the deployment diagram)
-  - Predefined (custom) Ansible roles, which correspond to the FQCN (Fully Qualified Collection Name) of a role entry in `role-config.yml`.
+  - Predefined (custom) Ansible roles, which correspond to the FQCN of a role entry in `role-config.yml`.
 - **`ansible/files/grafana/dashboards/<grafana_dashboard>.json`** (for each defined exporter role in the deployment diagram)
   - Monitoring dashboards to be provisioned for the Prometheus + Grafana monitoring stack (deployed using the role `monitoring_server`).
 - **`ansible/files/db.sql`** (when `role_web_server` is defined in the deployment diagram)
-  - Very small and simple MySQL database.
+  - Very small, simple, and local MySQL database.
 - **`ansible/files/test.php`** (when `role_web_server` is defined in the deployment diagram)
-  - Simple PHP page that queries the afforementioned (local) database.
+  - Simple PHP page that queries the aforementioned database.
 
 Generated (based on diagrams):
 
@@ -305,8 +426,6 @@ Generated (based on diagrams):
   - File describing the required roles and collections to be downloaded from Ansible Galaxy, mostly as dependencies for the predefined roles.
 - **`ansible/host_vars/<hostname>.yml`** (for each defined host in the deployment diagram)
   - (Role-specific) variables for each managed host to be configured by Ansible, mainly derived from information in both diagrams (network/IP addresses, hostnames, asset paths, ...).
-
-<!--TODO-->
 
 ## Acknowledgements & Credits
 
