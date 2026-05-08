@@ -1,0 +1,13 @@
+# ansible/roles/dns_server/tasks/main.yml
+---
+- name: Include bertvv.bind
+  ansible.builtin.include_role:
+    name: bertvv.bind
+
+- name: Add TCP port 8053 to SELinux dns_port_t
+  community.general.seport:
+    ports: 8053
+    proto: tcp
+    setype: dns_port_t
+    state: present
+  become: true

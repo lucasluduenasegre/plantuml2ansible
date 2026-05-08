@@ -1080,7 +1080,9 @@ def copy_assets(present_roles, role_config, output_env_path):
 # region Converters
 
 
-def convert_nwdiag(diagram_name, networks, include_control=False):
+def convert_nwdiag(
+    diagram_name, networks, output_env_path, include_control=False, verbose=False
+):
     """Render vagrant-hosts.yml and copy IaC assets for a nwdiag diagram.
 
     When include_control is True, a control node entry is added to
@@ -1101,9 +1103,8 @@ def convert_nwdiag(diagram_name, networks, include_control=False):
         )
         diagram_name = "unnamed"
 
-    debug_print_nwdiag(diagram_name, networks)
-
-    output_env_path = os.path.join("output", diagram_name)
+    if verbose:
+        debug_print_nwdiag(diagram_name, networks)
 
     env = Environment(
         loader=FileSystemLoader("templates/"), trim_blocks=True, lstrip_blocks=True
@@ -1152,12 +1153,21 @@ def convert_nwdiag(diagram_name, networks, include_control=False):
                 control_netmask=control_netmask,
             )
         )
-    print(f"Generated {output_path}")
+    print(f"Generated vagrant-hosts: {output_path}")
 
-    _copy_iac_assets(output_env_path, include_scripts=False)
+    if not include_control:
+        _copy_iac_assets(output_env_path, include_scripts=False)
 
 
-def convert_uml(diagram_name, networks, nodes, connections, role_config):
+def convert_uml(
+    diagram_name,
+    networks,
+    nodes,
+    connections,
+    role_config,
+    output_env_path,
+    verbose=False,
+):
     """Render inventory.yml, site.yml, host_vars, and requirements.yml for a UML diagram.
 
     Also copies static role assets via copy_assets().
@@ -1188,9 +1198,8 @@ def convert_uml(diagram_name, networks, nodes, connections, role_config):
         )
         diagram_name = "unnamed"
 
-    debug_print_uml(diagram_name, nodes, connections)
-
-    output_env_path = os.path.join("output", diagram_name)
+    if verbose:
+        debug_print_uml(diagram_name, nodes, connections)
 
     env = Environment(
         loader=FileSystemLoader("templates/"), trim_blocks=True, lstrip_blocks=True
@@ -1227,7 +1236,7 @@ def convert_uml(diagram_name, networks, nodes, connections, role_config):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as f:
         f.write(template.render(networks=networks))
-    print(f"Generated {output_path}")
+    print(f"Generated inventory: {output_path}")
 
     diagram_deps = _connections_to_host_deps(connections, nodes)
     playbook = build_playbook(roles, host_roles, extra_host_deps=diagram_deps)
@@ -1237,7 +1246,7 @@ def convert_uml(diagram_name, networks, nodes, connections, role_config):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as f:
         f.write(template.render(playbook=playbook))
-    print(f"Generated {output_path}")
+    print(f"Generated playbook: {output_path}")
 
     host_vars = build_host_vars(
         host_roles, roles, networks, nodes=nodes, connections=connections
@@ -1251,7 +1260,7 @@ def convert_uml(diagram_name, networks, nodes, connections, role_config):
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         with open(output_path, "w") as f:
             f.write(template.render(hostname=hostname, host_vars=vars_dict))
-        print(f"Generated {output_path}")
+        print(f"Generated host_vars: {output_path}")
 
     requirements = build_requirements(host_roles, roles)
 
@@ -1260,7 +1269,7 @@ def convert_uml(diagram_name, networks, nodes, connections, role_config):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as f:
         f.write(template.render(**requirements))
-    print(f"Generated {output_path}")
+    print(f"Generated requirements: {output_path}")
 
     present_roles = {role for roles in host_roles.values() for role in roles}
     copy_assets(present_roles, roles, output_env_path)
@@ -1272,7 +1281,9 @@ def convert_uml(diagram_name, networks, nodes, connections, role_config):
 # region Entry point
 
 
-def convert(nwdiag_path, uml_path=None, role_config_path=None):
+def convert(
+    nwdiag_path, uml_path=None, role_config_path=None, output_path=None, verbose=False
+):
     """Orchestrate the full conversion pipeline.
 
     Reads both input files, validates them, and calls the appropriate
@@ -1301,12 +1312,19 @@ def convert(nwdiag_path, uml_path=None, role_config_path=None):
 
     diagram_name, networks = parse_nwdiag(nwdiag_text)
 
-    output_env_path = os.path.join("output", diagram_name or "unnamed")
+    output_env_path = output_path or os.path.join("output", diagram_name or "unnamed")
+
     if os.path.exists(output_env_path):
         shutil.rmtree(output_env_path)
         print(warn(f"Warning: removed previous output at '{output_env_path}'"))
 
-    convert_nwdiag(diagram_name, networks, include_control=uml_path is not None)
+    convert_nwdiag(
+        diagram_name,
+        networks,
+        output_env_path,
+        include_control=uml_path is not None,
+        verbose=verbose,
+    )
 
     if uml_path is not None:
         if not os.path.isfile(uml_path):
@@ -1336,16 +1354,32 @@ def convert(nwdiag_path, uml_path=None, role_config_path=None):
             )
 
         validate_diagrams(networks, nodes)
-        convert_uml(diagram_name, networks, nodes, connections, role_config)
+        convert_uml(
+            diagram_name,
+            networks,
+            nodes,
+            connections,
+            role_config,
+            output_env_path,
+            verbose=verbose,
+        )
 
 
 def main():
     parser = argparse.ArgumentParser(
         description="Convert PlantUML diagrams to Ansible and Vagrant configuration",
         usage=(
-            "%(prog)s [--nwdiag] <nwdiag_path> [[--uml] <uml_path>] "
-            "[--role-config <path>]"
+            "%(prog)s [--v | --verbose] [--nwdiag] <nwdiag_path> "
+            "[[--uml] <uml_path>] [--role-config <role_config_path>] "
+            "[[--output | -o] <output_path>]"
         ),
+    )
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        default=False,
+        help="Print debug output (parsed diagram summaries) to stdout",
     )
     parser.add_argument(
         "--nwdiag",
@@ -1367,6 +1401,14 @@ def main():
         metavar="PATH",
         default=None,
         help="Path to role-config.yml (default: next to plantuml2ansible.py)",
+    )
+    parser.add_argument(
+        "--output",
+        "-o",
+        dest="output_path",
+        metavar="PATH",
+        default=None,
+        help="Output directory path (overrides the diagram name as directory name)",
     )
     parser.add_argument(
         "nwdiag_path_pos",
@@ -1399,6 +1441,8 @@ def main():
         nwdiag_path=nwdiag_path,
         uml_path=uml_path,
         role_config_path=args.role_config_path,
+        output_path=args.output_path,
+        verbose=args.verbose,
     )
 
 

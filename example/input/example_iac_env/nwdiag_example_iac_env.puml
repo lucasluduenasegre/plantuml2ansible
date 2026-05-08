@@ -1,0 +1,18 @@
+@startnwdiag example_iac_env
+
+network company.lan {
+  address = "172.26.0.0/24"
+
+  router [address = "172.26.0.254"]
+  dns [address = "172.26.0.20"]
+  web [address = "172.26.0.10"]
+}
+
+network external.lan {
+  address = "172.26.10.0/24"
+
+  router [address = "172.26.10.254"]
+  workstation [address = "172.26.10.10"]
+}
+
+@endnwdiag

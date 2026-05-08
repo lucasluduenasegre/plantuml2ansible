@@ -8,7 +8,11 @@ Note: if no diagram name is specified, the filename is used as a fallback for
 naming the output directory. This name should match the network diagram's.
 '/
 
-' Make each component per node unique
+/'
+Required line; qualifies component names with their parent host identifier
+(e.g. dns.node_exporter vs web.node_exporter), preventing name collisions
+for roles that appear on multiple hosts.
+'/
 set separator .
 
 ' Purely visual, won't have any effect on the parser
@@ -39,7 +43,7 @@ node dns as "dns" {
     component node_exporter
 }
 
-node monitoring {
+node monitoring as "monitoring" {
     component dns_client
     component monitoring_server
     component node_exporter

@@ -49,10 +49,10 @@ network test.lan {
     elements with shapes (based on deployment diagram objects):
       - https://plantuml.com/deployment-diagram
   '/
-  unmanaged_router [address = "172.26.0.254", managed = false, shape = node, color = LightSalmon]
-  dns [description = "dns", address = "172.26.0.20", shape = node]
-  monitoring [description = "monitoring", address = "172.26.0.30", cpus = 2, memory = 2048, shape = node]
-  web [description = "web", address = "172.26.0.10", shape = node]
+  unmanaged_router [address = "172.26.0.254", managed = false, shape = "node", color = LightSalmon]
+  dns [description = "dns", address = "172.26.0.20", shape = "node"]
+  monitoring [description = "monitoring", address = "172.26.0.30", cpus = 2, memory = 2048, shape = "node"]
+  web [description = "web", address = "172.26.0.10", shape = "node"]
 }
 
 /'
@@ -65,8 +65,8 @@ network unmanaged.lan {
   address = "172.26.10.0/24"
   color = LightSalmon
 
-  unmanaged_router [address = "172.26.10.254", managed = false, shape = node, color = LightSalmon]
-  unmanaged_workstation [address = "172.26.10.128", managed = false, shape = node, color = LightSalmon]
+  unmanaged_router [address = "172.26.10.254", managed = false, shape = "node", color = LightSalmon]
+  unmanaged_workstation [address = "172.26.10.128", managed = false, shape = "node", color = LightSalmon]
 }
 
 @endnwdiag
