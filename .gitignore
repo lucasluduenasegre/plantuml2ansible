@@ -34,9 +34,12 @@ node_modules/
 # Converter output
 output/*
 
-# Webserver secrets
-*/ansible/files/*.crt
-*/ansible/files/*.key
+# Private keys and certificates
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
 
 # Python virtual environments
 venv/
