@@ -29,14 +29,20 @@ Notes:
 Format:
 node <host_identifier> as <description>
 '/
-node dns as "dns" {
-
+node web as "web" {
     /'
     Role definition
 
     Format:
     component <role_identifier> as <role_name>
     '/
+    component dns_client
+    component mysqld_exporter
+    component node_exporter
+    component web_server
+}
+
+node dns as "dns" {
     component bind_exporter
     component dns_client
     component dns_server_primary
@@ -47,13 +53,6 @@ node monitoring as "monitoring" {
     component dns_client
     component monitoring_server
     component node_exporter
-}
-
-node web as "web" {
-    component dns_client
-    component mysqld_exporter
-    component node_exporter
-    component web_server
 }
 
 /'

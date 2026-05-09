@@ -750,24 +750,24 @@ def build_host_vars(host_roles, role_config, networks, nodes=None, connections=N
                 for h, host_data in net_data["hosts"].items()
                 if host_data["ips"]
             ]
-            zones.append(
-                {
-                    "name": net_name,
-                    "type": "primary",
-                    "name_servers": [
-                        f"{h}.{net_name}."
-                        for h in (
-                            role_hosts.get("dns_server_primary", set())
-                            | role_hosts.get("dns_server_secondary", set())
-                        )
-                    ],
-                    "allow_update": dns_server_ips,
-                    "also_notify": dns_secondary_ips,
-                    "forwarders": list(forwarders),
-                    "networks": [net_data["subnet"].rsplit(".", 1)[0]],
-                    "hosts": records,
-                }
-            )
+            zone = {
+                "name": net_name,
+                "type": "primary",
+                "name_servers": [
+                    f"{h}.{net_name}."
+                    for h in (
+                        role_hosts.get("dns_server_primary", set())
+                        | role_hosts.get("dns_server_secondary", set())
+                    )
+                ],
+                "allow_update": dns_server_ips,
+                "also_notify": dns_secondary_ips,
+                "forwarders": list(forwarders),
+                "networks": [net_data["subnet"].rsplit(".", 1)[0]],
+                "hosts": records,
+            }
+            zone = {k: v for k, v in zone.items() if v != []}
+            zones.append(zone)
         return zones
 
     def _build_bind_zones_secondary(hostname, networks):
@@ -900,14 +900,14 @@ def build_host_vars(host_roles, role_config, networks, nodes=None, connections=N
                     net_obj = ipaddress.IPv4Network(
                         f"{net_data['subnet']}/{net_data['netmask']}"
                     )
-                    hosts = list(net_obj.hosts())
-                    midpoint = len(hosts) // 2
+                    midpoint = net_obj.network_address + (net_obj.num_addresses // 2)
+                    last_host = net_obj.broadcast_address - 1
                     subnets.append(
                         {
                             "ip": str(net_obj.network_address),
                             "netmask": str(net_obj.netmask),
-                            "range_begin": str(hosts[midpoint]),
-                            "range_end": str(hosts[-3]),
+                            "range_begin": str(midpoint),
+                            "range_end": str(last_host - 2),
                         }
                     )
                 return subnets
@@ -1211,6 +1211,7 @@ def convert_uml(
         default_flow_style=False,
         allow_unicode=True,
         explicit_end=False,
+        sort_keys=False,
     )
 
     validate_templates(

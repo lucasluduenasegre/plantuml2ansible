@@ -48,8 +48,8 @@ roles:
     galaxy_roles:
       - bertvv.dhcp
     host_vars:
-      rhbase_firewall_allow_services:
-        - dhcp
+      rhbase_firewall_allow_ports:
+        - 67/udp
       dhcp_global_default_lease_time: 14400
       dhcp_global_max_lease_time: 14400
       dhcp_global_domain_name: __DIAGRAM_NETWORK_NAME__
@@ -66,11 +66,9 @@ roles:
     galaxy_roles:
       - bertvv.bind
     host_vars:
-      rhbase_firewall_allow_services:
-        - dns
-        - prometheus-node-exporter
       rhbase_firewall_allow_ports:
-        - 9119/tcp
+        - 53/tcp
+        - 53/udp
       bind_acls:
         - name: acl1
           match_list: __DIAGRAM_BIND_ACL_SUBNETS__
@@ -99,8 +97,6 @@ roles:
       rhbase_firewall_allow_ports:
         - 53/tcp
         - 53/udp
-        - 9100/tcp
-        - 9119/tcp
       bind_acls:
         - name: acl1
           match_list: __DIAGRAM_BIND_ACL_SUBNETS__

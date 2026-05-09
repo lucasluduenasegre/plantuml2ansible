@@ -3,8 +3,8 @@
 network company.lan {
   address = "172.26.0.0/24"
 
-  dns [address = "172.26.0.20"]
   web [address = "172.26.0.10"]
+  dns [address = "172.26.0.20"]
 }
 
 @endnwdiag

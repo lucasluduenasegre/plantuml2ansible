@@ -1,18 +1,18 @@
 @startuml example_full_env
 set separator .
 
-node dns {
-    component dns_client
-    component dns_server_primary
-}
-
 node web {
     component dns_client
     component web_server
 }
 
-dns.dns_client --> dns.dns_server_primary
+node dns {
+    component dns_client
+    component dns_server_primary
+}
 
 web.dns_client --> dns.dns_server_primary
+
+dns.dns_client --> dns.dns_server_primary
 
 @enduml
