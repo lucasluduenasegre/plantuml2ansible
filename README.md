@@ -4,7 +4,7 @@
 
 PlantUML2Ansible is a proof-of-concept for converting network and deployment diagrams (created using PlantUML) to IaC and configuration management supported environments (provided by Vagrant & Ansible, respectively).
 
-This solution is developed as part of a bachelor's thesis within the context of Applied IT at HOGENT (and its relevant course modules such as "[Cybersecurity Advanced](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193610&b=5&c=1)" and "[Infrastructure Automation](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193608&b=5&c=1)".
+This solution is developed as part of a bachelor's thesis within the context of the '*Applied IT*'-programme at HOGENT (and its relevant course modules such as *[Cybersecurity Advanced](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193610&b=5&c=1)* and *[Infrastructure Automation](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193608&b=5&c=1)*.
 
 Further clarification on the motivation, research, and code behind this project can be found in [the thesis's repository](https://github.com/lucasluduenasegre/latex-hogent-bachproef-nl-25-26-luduenasegrelucas).
 
@@ -13,11 +13,11 @@ Further clarification on the motivation, research, and code behind this project 
 Since this project is a proof-of-concept, there are a number of noteworthy limitations (which will be elaborated upon further in the later sections):
 
 1. Only a **single network** is supported when producing **both Vagrant and Ansible output** (**full mode**).
-2. Multiple networks **are** supported for **Vagrant-only output** (**IaC-only mode**), with a maximum of defined **3** IP addresses per host.
-3. An Ansible `control` node is automatically added in full mode; its IP address being the **network's broadcast address - 2**.
+2. Multiple networks **are** supported for **Vagrant-only output** (**IaC-only mode**), with a maximum of defined **3** IP addresses per host. Routing is **not** included.
+3. An Ansible `control` node is automatically added in full mode.
 4. Only **IPv4** is supported.
-5. All hosts defined in the diagrams are processed (denoted as "**managed**") unless the `managed = false` attribute is set in the network diagram.
-6. Only **AlmaLinux 9** (bento/almalinux-9) is supported as the guest OS.
+5. Only ***AlmaLinux* 9** is supported as the guest OS (with '`bento/almalinux-9`' as the Vagrant base box).
+6. The converter assumes the provided PlantUML-based diagrams to be syntactically valid.
 
 ## Prerequisites & installation
 
@@ -47,7 +47,7 @@ The following two sections will demonstrate a few basic examples of the usage of
 
 ### Full mode (network + deployment diagram)
 
-Example usage of the script for converting a **network diagram** and a corresponding **deployment diagram** to an **IaC (Vagrant) + configuration management (Ansible) supported environment** (limited to a single network):
+Example usage of the script for converting a **network diagram** and a (corresponding) **deployment diagram** to an **IaC (Vagrant) + configuration management (Ansible) supported environment** (limited to a single network):
 
 ```
 python plantuml2ansible.py nwdiag_example_full_env.puml uml_example_full_env.puml
@@ -165,38 +165,38 @@ network external.lan {
 
 The next two sections will go into much further detail about the usage of this script, as well as elaborating on some of its limitations.
 
+A limitation for both use cases is that the virtual machines in the produced environment will **only** support ***AlmaLinux* 9** as their guest OS (with '`bento/almalinux-9`' as the Vagrant base box).
+This is because the current role configuration is reliant on a number of existing Ansible roles (see the "Acknowledgements & Credits"-section) which are used in the '*Applied IT*'-programme, and these are only functional on *AlmaLinux* 9 (also as opposed to the more recent AlmaLinux 10).
+
 For both use cases, one can include the `--verbose`/`-v` flag for debugging purposes and specify the output directory with the `--output`/`-o` flag (`output/<diagram_name>` by default).
 
 ### Full mode (network + deployment diagram)
 
-Command-line syntax:
+Command-line usage:
 
 ```
 python plantuml2ansible.py [--v | --verbose] [--nwdiag] <nwdiag_path> [--uml] <uml_path> [--role-config <role_config_path>] [[--output | -o] <output_path>]
 ```
 
-This is the main use case of this script, and will set up a Vagrant environment as well as an Ansible-supported environment (including a `control` node) based on predefined roles assigned to the hosts. The `control` node's IP address will, by default, be the **network's broadcast address - 2**.
+This is the main use case of this script, and will set up a Vagrant environment as well as an Ansible-supported environment (including a `control` node) based on predefined roles assigned to the hosts. The `control` node's IP address will be set as the **network's broadcast address - 2**, e.g. `172.16.255.253` for the network `172.16.0.0/16`.
 
 Only hosts/nodes within a **single network** can be defined in the deployment diagram for this use case. The configuration of routers (as well as the more elaborate firewall rules that it implies) is a task that goes beyond the scope of this proof-of-concept, which is to demonstrate the possibility of converting UML diagrams to configuration management code. As such, each VM will have internet access through their unique NAT interface, provided by Vagrant.
 
 By default, the converter will use `role-config.yml` as the configuration file for predefined roles (which will be covered later). A custom role configuration file can optionally be provided with the `--role-config` flag.
 
-The virtual machines in this environment will **only** use **AlmaLinux 9** (`bento/almalinux-9`) as their guest OS.
-This is because the predefined roles for the converter are reliant on a number of **Bert Van Vreckem**'s Ansible roles (see the "Acknowledgements & Credits"-section), which are only functional on AlmaLinux 9 as opposed to the more recent AlmaLinux 10.
-
 ### IaC-only mode (network diagram)
 
-Command-line syntax:
+Command-line usage:
 
 ```
 python plantuml2ansible.py [--v | --verbose] [--nwdiag] <nwdiag_path> [[--output | -o] <output_path>]
 ```
 
-This is useful if you wish to have a ready-to-use Vagrant environment, but you do want more freedom when setting up configuration management (with or without Ansible). To that end, this environment **will not** include an Ansible `control` node.
+This is not the main use case of this script, yet is useful if you wish to have a ready-to-use Vagrant environment, but you do want more freedom when setting up configuration management (with or without Ansible). To that end, this environment **will not** include an Ansible `control` node.
 
-Multiple networks **can** be specified for this use case, as long as there are no hosts with more than **3** defined IP addresses. This is a technical limitation due to VirtualBox's maximum of 4 network interfaces, of which the first is reserved for the NAT interface Vagrant uses by default.
+Multiple networks **can** be specified for this use case, as long as there are no hosts with more than **3** defined IP addresses. This is a technical limitation due to VirtualBox's maximum of 4 network interfaces per virtual machine, of which the first is reserved for the NAT interface Vagrant uses by default.
 
-This is not the main use case of this script, but it does demonstrate the ability to handle multiple networks with Vagrant, which serves as a base for future extensions to this project.
+This use case still does **not** take routing/connectivity between the different networks into account, but it does demonstrate the ability to produce these with Vagrant, which serves as a base for future extensions to this project.
 
 ## Input format (network + deployment diagrams)
 
@@ -289,7 +289,7 @@ network unmanaged.lan {
 @endnwdiag
 ```
 
-The PlantUML code above will generate the following image:
+The PlantUML-code above will generate the following image:
 
 ![](https://www.plantuml.com/plantuml/svg/fLPXR-Cs3_xkNq7uIriWTTgylRvTrnMtOHWseBiTS7VRXs88P8k9jIgI9z791Tlzzv5oNAUfknqse4KJadeUYdn8zNKa5SXjj55B88mqHxVEfaVPjsm8QWLEhH0qBempPBpBikzyM2cwXYSdRtGNFfVmsonxumclmIp0UT3xI2P2RB0o2uDw0bGZB8p5tjL6rA0YA5WeQqjLFS32XupTnYrJj6-fQOan0rRamxQ0zxM97NQiVMirS7PLdO8rDjPlL-YeJ-8e5jdHD9CBla7Q-F0mThVCxNmtkm_TjU2F341f7J16-6fmxaotqvicCDZ7kKMtfFgMeojlVP3Oz66-LhRbyXH50TcdhahnEZk5dvpTmWzlrnUfFctJ-42eOLEZw_AJw_T9xUWm5dmoJy2vd5CEV2FtK7O2QnDRPK4H1LEsX42r8jWOQw542EWq1jGPGBc5jrOv-l3Z7N0WcANpx16xbB3oRes1C1Jm3h5hcBVMRpWZFcsDIorYHANP9CN7O9ZPEuYqjM93YzA3oFHKToNXMmC0d49DrCJhwRIH7DgLBIg_cgOGwLD_PH5cmH477SZF_pyhPfV5MN4sFR_CCtPoOm6-zv7s-mh0Ftrl0Mvgzi-DHaUYmt0BztjTDStwuh6b4uQ9LJ2fhkBT-yhEgcdJ6RMYUUK3oe4LhbYNlNLPpbbsObPEBL6BdKABVxB08x8zrgf1iSe7COnAvjVk3Zl1IE7Uop28R1XOAnBAeTacGhwxGZu1PIrugZ54K04VHL982pvBUkpVLvtGVxCLhsejYIQUrcKlaUDDRQfQe7l9xGlkH3BeHTaFVy9ZAeOMQkcLJD-N8sqpALX0XdrX5WV9o5fnWjqb_a7IYAbPO5mYwobscGoYrq0UwcrJeukiX1Rbkz0nYldOXJbXwOeYkkjLBhZvqFFKxHmMLYrxbXSdJGZIA4QIoB72TNHtvW7x1J21F0cesmJGj07jzlaMOArq_0EvqFtZg7_Me0lImR2dd28SbqgQwzt8IWPV_eOLnHFHzTyiXU7awUuan_EE06ZThj3pu5l20FVFLyJirIl-lU0w7JHbcC3SUOtvC81tPbdJEsLNtiduRR24-wVR86SR7nXRIETd-I6oW6WNdu6mxGMGsJW89sJ81-d28TRWUW7oVmpPhwtPthAQdLrSFUVwrBsKyfWVwA7Vp2Ro8RznCXaQcJvIKDIff_4ncj9OGrlmYyTjagraj1kBFKZaL5alQ2t_7RgPvZ8My8kieYKwP62XBZtLyBCem948EllQCOqL0MkS7EIPCE1OT1_RCkBlBJgosnJMyvzq8-4yGObPvTSu-W3kFKX3agElqXUpulpoAXLyEhl8CnZJL3Qkt36O_wZSWILLcvIevIMgyzdLlwKIkRn6fxl_2Vy2)
 
@@ -464,7 +464,7 @@ The **FQCN** (Fully Qualified Collection Name) is the name that will be used in 
 
 **FQCN**: `bertvv.dhcp`
 
-Configures an **ISC DHCP server** using the `bertvv.dhcp` Ansible Galaxy role. The subnet, broadcast address, netmask, domain name, and DNS server IPs are all derived automatically from the network diagram at build time. The range for **dynamic IP addresses** is always from the **midpoint of the subnet** to the **network broadcast address - 3**, e.g. `172.26.128.0`-`172.26.255.252` for the network `172.26.0.0/16` (`172.26.255.253` is reserved for the Ansible `control` node).
+Configures an **ISC DHCP server** using the `bertvv.dhcp` Ansible Galaxy role. The subnet, broadcast address, netmask, domain name, and DNS server IPs are all derived automatically from the network diagram at build time. The range for **dynamic IP addresses** is always from the **midpoint of the subnet** to the **network broadcast address - 3**, e.g. `172.16.128.0`-`172.16.255.252` for the network `172.16.0.0/16` (`172.16.255.253` is reserved for the Ansible `control` node).
 Lastly, the default and maximum lease times are set to 4 hours (14400 seconds).
 
 This role **depends on** `dns_server_primary` and/or `dns_server_secondary` being provisioned first, as their IP addresses are used to populate `dhcp_global_domain_name_servers`. Port `67/udp` is opened in the firewall.
@@ -566,7 +566,7 @@ The following sections describe the file structure the converter will copy and g
 Copied (verbatim):
 
 - **`Vagrantfile`**
-  - File that describes the general provisioning of each host managed by Vagrant. The hosts in this environment will **only** use **"bento/almalinux-9"** as the guest OS.
+  - File that describes the general provisioning of each host managed by Vagrant. As said before, the hosts in this environment will **only** use '`bento/almalinux-9`' as the base box.
 
 Generated (based on diagram):
 
@@ -645,7 +645,7 @@ Generated (based on diagrams):
   - The network diagram for the lab template of this course module was used and slightly altered as input (without a corresponding deployment diagram) for this proof-of-concept.
 
 - HoGentTIN. (2025b). _HoGentTIN/infra-labs: Lab assignments for the Infrastructure Automation course_. GitHub. https://github.com/HoGentTIN/infra-labs
-  - The labs 2 and 3 of this course module were used as references for creating network- and deployment diagrams as input for this proof-of-concept (excluding `r001` and `srv003`).
+  - The labs 2 and 3 of this course module were used as references for creating network- and deployment diagrams as input for this proof-of-concept (excluding `r001`).
 
 ## License
 
