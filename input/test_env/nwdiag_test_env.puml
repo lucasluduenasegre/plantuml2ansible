@@ -15,7 +15,7 @@ Format:
 network <network_name> {
   address = <network_address>/<prefix_length>
   color = <color_value>
-... 
+...
 }
 
 Notes:
@@ -33,16 +33,16 @@ network test.lan {
   
   Format:
   <host_identifier> [address = <ipv4_address>, description = <description>, cpus = <amt_cores>, memory = <amt_gb_ram>, managed = <true|false>, shape = <shape>, color = <color_value>]
-  
+
   Notes:
   - The only mandatory attribute is "address", all others are optional.
     Only IPv4 is supported when defining IP addresses.
   - By default the <description> attribute (which is rendered by PlantUML)
     will be used as the resulting hostname; <host_identifier> is the
     fallback if <description> is unused.
-  - Underscores in the hostname will be converted to hyphens, due to 
+  - Underscores in the hostname will be converted to hyphens, due to
     Unix conventions.
-  - Hosts with the "managed = false" flag will be ignored by the converter
+  - Hosts with the "managed = false" attribute will be ignored by the converter
     but still rendered by PlantUML.
   - Like "color", "shape" is a purely visual attribute and will ignored by
     the converter. See the following link for reading material on styling
@@ -52,7 +52,7 @@ network test.lan {
   unmanaged_router [address = "172.26.255.254", managed = false, shape = "node", color = LightSalmon]
   web [description = "web", address = "172.26.0.10", shape = "node"]
   dns [description = "dns", address = "172.26.0.20", shape = "node"]
-  monitoring [description = "monitoring", address = "172.26.0.30", cpus = 2, memory = 2048, shape = "node"]
+  mon [description = "monitoring", address = "172.26.0.30", cpus = 2, memory = 2048, shape = "node"]
 }
 
 /'

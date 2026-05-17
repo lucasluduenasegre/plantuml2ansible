@@ -9,9 +9,9 @@ naming the output directory. This name should match the network diagram's.
 '/
 
 /'
-Required line; qualifies component names with their parent host identifier
-(e.g. dns.node_exporter vs web.node_exporter), preventing name collisions
-for roles that appear on multiple hosts.
+Required line; qualifies component names with their parent host identifier,
+preventing name collisions for roles that appear on multiple hosts (e.g.
+dns.node_exporter vs web.node_exporter).
 '/
 set separator .
 
@@ -34,7 +34,7 @@ node web as "web" {
     Role definition
 
     Format:
-    component <role_identifier> as <role_name>
+    component <role_identifier>
     '/
     component dns_client
     component mysqld_exporter
@@ -49,7 +49,7 @@ node dns as "dns" {
     component node_exporter
 }
 
-node monitoring as "monitoring" {
+node mon as "monitoring" {
     component dns_client
     component monitoring_server
     component node_exporter
@@ -66,12 +66,12 @@ Format:
 '/
 dns.dns_client -[#teal]-> dns.dns_server_primary
 
-monitoring.dns_client -[#teal]-> dns.dns_server_primary
-monitoring.monitoring_server -[#coral]-> dns.bind_exporter
-monitoring.monitoring_server -[#coral]-> dns.node_exporter
-monitoring.monitoring_server -[#coral]-> monitoring.node_exporter
-monitoring.monitoring_server -[#coral]-> web.mysqld_exporter
-monitoring.monitoring_server -[#coral]-> web.node_exporter
+mon.dns_client -[#teal]-> dns.dns_server_primary
+mon.monitoring_server -[#coral]-> dns.bind_exporter
+mon.monitoring_server -[#coral]-> dns.node_exporter
+mon.monitoring_server -[#coral]-> mon.node_exporter
+mon.monitoring_server -[#coral]-> web.mysqld_exporter
+mon.monitoring_server -[#coral]-> web.node_exporter
 
 web.dns_client -[#teal]-> dns.dns_server_primary
 

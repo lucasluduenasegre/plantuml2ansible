@@ -259,7 +259,7 @@ network test.lan {
     fallback if <description> is unused.
   - Underscores in the hostname will be converted to hyphens, due to
     Unix conventions.
-  - Hosts with the "managed = false" flag will be ignored by the converter
+  - Hosts with the "managed = false" attribute will be ignored by the converter
     but still rendered by PlantUML.
   - Like "color", "shape" is a purely visual attribute and will ignored by
     the converter. See the following link for reading material on styling
@@ -269,7 +269,7 @@ network test.lan {
   unmanaged_router [address = "172.26.255.254", managed = false, shape = "node", color = LightSalmon]
   web [description = "web", address = "172.26.0.10", shape = "node"]
   dns [description = "dns", address = "172.26.0.20", shape = "node"]
-  monitoring [description = "monitoring", address = "172.26.0.30", cpus = 2, memory = 2048, shape = "node"]
+  mon [description = "monitoring", address = "172.26.0.30", cpus = 2, memory = 2048, shape = "node"]
 }
 
 /'
@@ -291,11 +291,11 @@ network unmanaged.lan {
 
 The PlantUML-code above will generate the following image:
 
-![](https://www.plantuml.com/plantuml/svg/fLPXR-Cs3_xkNq7uIriWTTgylRvTrnMtOHWseBiTS7VRXs88P8k9jIgI9z791Tlzzv5oNAUfknqse4KJadeUYdn8zNKa5SXjj55B88mqHxVEfaVPjsm8QWLEhH0qBempPBpBikzyM2cwXYSdRtGNFfVmsonxumclmIp0UT3xI2P2RB0o2uDw0bGZB8p5tjL6rA0YA5WeQqjLFS32XupTnYrJj6-fQOan0rRamxQ0zxM97NQiVMirS7PLdO8rDjPlL-YeJ-8e5jdHD9CBla7Q-F0mThVCxNmtkm_TjU2F341f7J16-6fmxaotqvicCDZ7kKMtfFgMeojlVP3Oz66-LhRbyXH50TcdhahnEZk5dvpTmWzlrnUfFctJ-42eOLEZw_AJw_T9xUWm5dmoJy2vd5CEV2FtK7O2QnDRPK4H1LEsX42r8jWOQw542EWq1jGPGBc5jrOv-l3Z7N0WcANpx16xbB3oRes1C1Jm3h5hcBVMRpWZFcsDIorYHANP9CN7O9ZPEuYqjM93YzA3oFHKToNXMmC0d49DrCJhwRIH7DgLBIg_cgOGwLD_PH5cmH477SZF_pyhPfV5MN4sFR_CCtPoOm6-zv7s-mh0Ftrl0Mvgzi-DHaUYmt0BztjTDStwuh6b4uQ9LJ2fhkBT-yhEgcdJ6RMYUUK3oe4LhbYNlNLPpbbsObPEBL6BdKABVxB08x8zrgf1iSe7COnAvjVk3Zl1IE7Uop28R1XOAnBAeTacGhwxGZu1PIrugZ54K04VHL982pvBUkpVLvtGVxCLhsejYIQUrcKlaUDDRQfQe7l9xGlkH3BeHTaFVy9ZAeOMQkcLJD-N8sqpALX0XdrX5WV9o5fnWjqb_a7IYAbPO5mYwobscGoYrq0UwcrJeukiX1Rbkz0nYldOXJbXwOeYkkjLBhZvqFFKxHmMLYrxbXSdJGZIA4QIoB72TNHtvW7x1J21F0cesmJGj07jzlaMOArq_0EvqFtZg7_Me0lImR2dd28SbqgQwzt8IWPV_eOLnHFHzTyiXU7awUuan_EE06ZThj3pu5l20FVFLyJirIl-lU0w7JHbcC3SUOtvC81tPbdJEsLNtiduRR24-wVR86SR7nXRIETd-I6oW6WNdu6mxGMGsJW89sJ81-d28TRWUW7oVmpPhwtPthAQdLrSFUVwrBsKyfWVwA7Vp2Ro8RznCXaQcJvIKDIff_4ncj9OGrlmYyTjagraj1kBFKZaL5alQ2t_7RgPvZ8My8kieYKwP62XBZtLyBCem948EllQCOqL0MkS7EIPCE1OT1_RCkBlBJgosnJMyvzq8-4yGObPvTSu-W3kFKX3agElqXUpulpoAXLyEhl8CnZJL3Qkt36O_wZSWILLcvIevIMgyzdLlwKIkRn6fxl_2Vy2)
+![](https://www.plantuml.com/plantuml/svg/fLPHRzj637xNho3qqWHmvCHBiopBWcuOXWt8kW9jjuUWC4uwshhbTAVTKNQDhVzzf6HPZgrinGOaWC8Zluz7VkJbLIGLoAsrKKiWZ3H7jqgcBvBlsH1K1KvL21eNnXaotYN93pvKYcxWIUIjxjpdudwN9AyzuGsO1JWFUX_9H8Wr5cPXK4-0IeI5iTWVDH4rg0WA5ihQN1MFiF0XuMFZbgstRwXkY3435kJ39eDtfOaTTYnzOpLmTaNPEckihTzKwAXFuaNCaXVJH2xu6cdjm-FOtHAtFRlTVdJNWZyJ0ALrm1ZXc-5mQxgRtjQ1mJxEBRebbNViNNZhW_Ys7_ELiWsN9ykov5DNf7YJdC4lpcxWfpUhoxOyJLtxGAXXNQBhqfFRzpbjsJ1c79cskAd4AGU-bcieEu6LYOsoe8Y2oHj2e58Hh8sra2C4T1e3wWGWty0Rgnoz__aUs17Cqda-4RjKiF1kXO4mPF0MiUkNjzQlEIEEjiQr7M94fTaajSTWcDaxYBInOaEBqeB8z5Hs5U5R0m2SGKbKnvlfj9OScifcXQ-chOkqgR-ow39ZZuC6f1TVphBPLNQUdKylhjA43xcl03_wIFjj1U2VlhK0joMVpur6HoB3S0SFUqqrzUforz49myGYcBQkShht9nyMTTF6g8hcXGye0HLMBClUkipdh3enAwUMgCLEeS6_MDyHsHvBLQDOvKCCeuhv87VRoaNAzaucGKJ3i5gH40wjDX7IxGNI2IXhmLE98O8Ak9D89WtuBE7n-RxcXFwxZPognf8eucbLzX8vMPUcA0Mw5zo-t4ubWrwIkyaNFAPYQA6MJideVJtIDDCw2yYmBCpY81dPAKwmkyJVIngnRHKO9_4xYcqcW-Gra8ToKvVe8kkWGI0lR0nYFdPUJaYwceZeUeaBR3eql6rrEjIbPtfsrbeMzeH8uZbMl8xptZnYlm8caBOIwdO1r4r0kpdU0woNZdyW5xf_7VRF6dL1EXZtDgS89xcI1ditifF1vxzZGV5KjFqFQs68FDj6iZzl2O36RQiz3xuX3F1ml2HcBr_oxoNNwQ0pmmocpcjCXn6yDykItYfRUVU1MTQOmyFJVP2oZGF6LjB5UNg8B23QnICGjZq3CXi7uOIEGDXco0VkmZDONp1Mlx5cUtjgTdvvVKpogNiZvHa_44A_b4ta8BzsCYOQcJvIKDJ9flOncjnOGnlmYzqgIIgPwzfY3n8vLHOAMWig3criXp9cy9lieIKwP62XpZsLyAkqtf4eEVdMCOqLvMgS7EJPOi2923usUSG_6dHaD-Asup_jPi5vWXoJmgzmzEtRUuk694SVfAzcsSNLTLlmwUmoJM1CJCcuPCTW_gTa1vQssgH4BSzHNSok_okLoEKLEjtzDvZy3G00)
 
 ### Deployment diagram (`@startuml`)
 
-The deployment diagram represents the configuration of hosts (denoted here as "nodes"), their components (in this case predefined Ansible roles) and the connections between those components in a given environment. As mentioned before, only hosts within a **single network** can be defined in this diagram for **IaC + configuration management supported environments**.
+The deployment diagram represents the configuration of hosts (denoted here as "nodes") in a given environment, as described by their components (in this case predefined Ansible roles) and the connections between them. As mentioned before, only hosts within a **single network** can be defined in this diagram for **IaC + configuration management supported environments**.
 
 The following is an example of a possible deployment diagram:
 
@@ -311,9 +311,9 @@ naming the output directory. This name should match the network diagram's.
 '/
 
 /'
-Required line; qualifies component names with their parent host identifier
-(e.g. dns.node_exporter vs web.node_exporter), preventing name collisions
-for roles that appear on multiple hosts.
+Required line; qualifies component names with their parent host identifier,
+preventing name collisions for roles that appear on multiple hosts (e.g.
+dns.node_exporter vs web.node_exporter).
 '/
 set separator .
 
@@ -336,7 +336,7 @@ node web as "web" {
     Role definition
 
     Format:
-    component <role_identifier> as <role_name>
+    component <role_identifier>
     '/
     component dns_client
     component mysqld_exporter
@@ -351,7 +351,7 @@ node dns as "dns" {
     component node_exporter
 }
 
-node monitoring as "monitoring" {
+node mon as "monitoring" {
     component dns_client
     component monitoring_server
     component node_exporter
@@ -368,12 +368,12 @@ Format:
 '/
 dns.dns_client -[#teal]-> dns.dns_server_primary
 
-monitoring.dns_client -[#teal]-> dns.dns_server_primary
-monitoring.monitoring_server -[#coral]-> dns.bind_exporter
-monitoring.monitoring_server -[#coral]-> dns.node_exporter
-monitoring.monitoring_server -[#coral]-> monitoring.node_exporter
-monitoring.monitoring_server -[#coral]-> web.mysqld_exporter
-monitoring.monitoring_server -[#coral]-> web.node_exporter
+mon.dns_client -[#teal]-> dns.dns_server_primary
+mon.monitoring_server -[#coral]-> dns.bind_exporter
+mon.monitoring_server -[#coral]-> dns.node_exporter
+mon.monitoring_server -[#coral]-> mon.node_exporter
+mon.monitoring_server -[#coral]-> web.mysqld_exporter
+mon.monitoring_server -[#coral]-> web.node_exporter
 
 web.dns_client -[#teal]-> dns.dns_server_primary
 
@@ -382,13 +382,13 @@ web.dns_client -[#teal]-> dns.dns_server_primary
 
 This code will render the following image:
 
-![](https://www.plantuml.com/plantuml/svg/dLN1ZkCs3BthAuZj8IsGEFVPmM1R5EqUscAnw9oA8b0iEYP65ZqYdQnHzDyhEirulK7RINEH8lAHx-bHoJjHdtNe8YYAxZ0TtNRblYT_oBw3v3k4W0qbKkBat0-SEwztCCFkmpbtPxaFplt2YdT03II6y7aP4f0UQse8mngqHMWeuYKq20Rm0XuQ7-FUrq_GS7ObJEamPVEW_Q0GA6EjdCSAVcr9phMbvI46ADJgTafEg2VEJnS6AwdSQkjCsaTy7YXZW4W9tyBpuADH4gYvwpbXqgcam8bqgaKPUf_jl6LHe52sXiZkQwmE5OGaLUA0E_pKSrRCS2nWt2yFlrb3d_5es7GuawuvHXBY9Av8XSmHfJJq2hxlqMVW1DqGbVg8K--p2445mKB9Qq5LpgtWmv0nZd0aAMhMSEAqKcZz4S6d4R1fi5RWP6fCYs1s4Hi5PSXqQ2-NQWxR5RrdqONhvgdSkGryDzgvBwIAxoXrfjuo7k14CS8UNsoqJXcb99fS8s-Itxfxs-xcEtm0cf9drwbPbhQ48LdTgX1uJ06pr9nHWCw2BiLVEDISZfWLW-bhnxx596i80zhtnqIVpXd9oalrCjFE_89hWbwMXCm3IpMFBVYch6_W3mVbirrDoqUEosTZXvSsjfzdxTvil-fdX-S7DQMNZajKIBAh8vNj5u5kbESONgRkYwZH_eUOgTa9vcC9_EacWTPb4bXM4xZCtrEQ-xoMdWNEJNPzfixdyLyOpaGwJgISRPICp_pLQBsozGowoFoFpiLByt6Zl34xR6ZI-P78vLVksvpv9D0Dek3ZoOy2FLDIQ39ti7XYQzWF2hLFDg6YOxHtKjUSWwbITZ1zMjLUxhRREdjfCNIKGdKWROTzHRpz47tInvz_UazQjoqzOPOV1mguZNxaGVzUgbQxE8_rrKHNrpEtsJp0A_9izEtdRhvasFpsbQAFlvS2K-JQO3VV_6t0pt1NvXcyvZpZ5-Du6tHs_YRe7Fs_5UnFOl5WRmKl-pexkisQTvZ2qCM_0000)
+![](https://www.plantuml.com/plantuml/svg/bLHDZzis4BtpLmpIWrjWBTytYqLQ56qERH44tLDH6BGuiWPBSRISaHsXw7-lXgwjA4Q2jI-KEH_p7jyZtudwh4CNGL5qY-dWDYltC_bzzXqato44R2YH4YVdVk7SURs7kUmXd7Atbllet1-iU0_KG688dxSX0UcnfeOmt86s20r5F8S6mG1Um4FZOzpv-XaQpcuAKzgNR1wq7nG2PQoLyrZ1dot9gRUqFCG04xIwBSa9zSZv-OnW9PLRRPnH-uWl0sKC42dXMtWPV3H80ZLtFITCMbeA74bBByhG-spxBOi21Kng5VdEzHaFcDGG5XWrnqX2dCJ0G-Q80jfw1T_tw3DmWcw8Idt4qatWUwpsbGj9giG1j_YfvwoOuJ01mDroyuT2Gb11S8BabJDKpgtWmv0nZd0WcTZSmP7JIg7r1mIVHi2cmLg1ax4nBeBPHMmKb27JlZqVgYbiH_IUHHUgcwPoxzRmqsZxVeWwwOvIP-ejun6E52Fiy2AZJSeenZNj2rKxeBVkmJwtyna-0fNaMNLgbgsBEPBrhIO0JobWbfep2b0XT6b-mL1pEc1M3CQl7ViMazn16D3-FoNwTCf8rbwgYwUTdJLS0_Io16GQMAhfOy4tq_e6_d4009jLMJvoN5uRspoFiU_PQmzcai_dbVWqOfaMacphI9ZqYq0toaiC5ujy4JMSNuaP_ArWFao1VrrXP5CAesarHily7QLvpclXMU0qPDjdwdmUlu5m1j9nAa2cbPGpfRtXUUNCkUZCxziZpVAcs5fvRMgOFTBfEiZvFVinPpuAT8Ce-7Zqeq3Fb1IQp1qiBjCTx0Q5sYVpekWOxKRKDUTGNZ9sK7wjQY_tcqsTlRGOEagXsfEsmwuYtdo8FkdJxx-z9wtRbfunowy31Tn4F_AW_ozLgrsS3NpbtUhANR1UFy8hyipazYZDXmphlxvJzF7lgK69N2lhEawtLLZ1bLnMLtEU2vVEUrsDYNnBZMNSMcCFz7p_RgbQJdAsTTj9lyCKXYx-1m00)
 
 ### Role configuration (`role-config.yml`)
 
-There are a number of predefined roles (found in `assets/ansible/roles`) that can be specified for each managed host in the deployment diagram. Much of the information required by each role (in the form of `host_vars`) will be derived from information gathered from both the network and deployment diagrams.
+There are a number of predefined roles (found in `assets/ansible/roles`) that can be specified for each managed host in the deployment diagram. Much of the information required by each role will be derived from both the network and deployment diagrams and will be subsequently processed by the converter in order to generate `host_vars` (variables that are to be assigned per host).
 
-These roles (along with some roles coming directly from Ansible Galaxy) are defined in a configuration file called `role-config.yml` (found in the same directory as `plantuml2ansible.py`), which looks like this:
+These roles (along with a number of roles coming directly from Ansible Galaxy) are defined in a configuration file called `role-config.yml` (found in the same directory as `plantuml2ansible.py`), which looks like this:
 
 ```yaml
 # role-config.yml
@@ -396,23 +396,24 @@ These roles (along with some roles coming directly from Ansible Galaxy) are defi
 # fully qualified Ansible role names and associated metadata.
 #
 # Notes:
-#   - "fqcn" (the "Fully Qualified Collection Name") is the name that will be used
-#     in the roles section of a host's play in the playbook. This is also the only
-#     required key, all others are optional.
-#   - "priority" directs the execution order of the role within a host's play.
-#     Roles with lower priority values run first, and 100 is the default value.
-#   - "depends_on" directs which roles must be applied on other hosts before this
-#     role's host play runs. For example, hosts with the "dns_server_*" role must
-#     complete their play before the hosts with "dns_client".
-#   - "galaxy_roles" and "galaxy_collections" represent the Ansible Galaxy roles
-#     and collections that must be installed on the Ansible control node prior
-#     to running the playbook.
-#   - "assets" represent the files under the "assets/" directory that are to be
-#     copied to the Ansible control node prior to running the playbook.
-#   - "host_vars" are the variables (in YAML format) written to the host's
-#     host_vars file. Sentinels prefixed with __DIAGRAM_ are placeholders which
-#     will be resolved by the converter at build time, derived from
-#     diagram information.
+# - "fqcn" (the "Fully Qualified Collection Name") is the name that will be used
+#   in the roles section of a host's play in the playbook. This is also the only
+#   required key, all others are optional.
+# - "priority" directs the execution order of the role within a host's play.
+#   Roles with lower priority values run first, and 100 is the default value.
+# - "depends_on" directs which roles must be applied on other hosts before this
+#   role's host play runs. For example, hosts with the "dns_server_primary"-
+#   or "dns_server_secondary" role must complete their play before the hosts
+#   with the "dns_client"-role.
+# - "galaxy_roles" and "galaxy_collections" represent the Ansible Galaxy roles
+#   and collections that must be installed on the Ansible control node prior
+#   to running the playbook.
+# - "assets" represent the files under the "assets/" directory that are to be
+#   copied to the Ansible control node prior to running the playbook.
+# - "host_vars" are the variables written to the host's host_vars file
+#   (in YAML format). Sentinels prefixed with __DIAGRAM_ are placeholders
+#   which will be resolved by the converter at build time, derived from
+#   diagram information.
 #
 # Format:
 # roles:
@@ -487,7 +488,7 @@ Configures a **secondary DNS server** using the same custom `dns_server` role as
 
 A lightweight custom role that turns the host into a **DNS client** by altering its `/etc/resolv.conf` file. It removes any pre-existing `nameserver` entries, sets the search domain to the network's domain name (based on the `network_name`), and adds the DNS server IPs derived from the diagram (`__DIAGRAM_DNS_SERVER_IPS__`). It runs after both `dns_server_primary` and `dns_server_secondary` have been provisioned.
 
-### `monitoring_server` (Grafana + Prometheus stack)
+### `monitoring_server` (Grafana + Prometheus)
 
 Deploys a **monitoring stack** consisting of **Prometheus** and **Grafana**, using the `prometheus.prometheus` and `grafana.grafana` Ansible Galaxy collections, respectively. The custom `monitoring_server` role applies both upstream roles in sequence, then copies the Grafana dashboard provisioning configuration and dashboard JSON files (based on the **exporter roles** in the diagram) from the Ansible `control` node to the server.
 
@@ -531,9 +532,9 @@ The `web_server` role automatically creates a dedicated `exporter` database user
 
 Exposes **general system-level metrics** (CPU, memory, disk, network, etc.) on **port `9100/tcp`** for every host it is assigned to. This is typically the most broadly applied exporter role in any environment.
 
-### `web_server` (Apache + MariaDB stack)
+### `web_server` (Apache + MariaDB)
 
-Configures an **Apache HTTP server** (optionally with **HTTPS**) and a **MariaDB** database using the [`bertvv.httpd`](https://galaxy.ansible.com/ui/standalone/roles/bertvv/httpd/) Galaxy role, wrapped in the custom `web_server` role. The custom role additionally handles database provisioning and user creation via the `community.mysql` collection.
+Configures an **Apache HTTP server** (optionally with **HTTPS**) and a **MariaDB** database using the `bertvv.httpd` Galaxy role, wrapped in the custom `web_server` role. The custom role additionally handles database provisioning and user creation via the `community.mysql` collection.
 
 On first run (detected by whether the `db.sql` copy task registers a change), the role:
 

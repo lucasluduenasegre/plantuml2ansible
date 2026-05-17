@@ -3,23 +3,24 @@
 # fully qualified Ansible role names and associated metadata.
 #
 # Notes:
-#   - "fqcn" (the "Fully Qualified Collection Name") is the name that will be used
-#     in the roles section of a host's play in the playbook. This is also the only
-#     required key, all others are optional.
-#   - "priority" directs the execution order of the role within a host's play.
-#     Roles with lower priority values run first, and 100 is the default value.
-#   - "depends_on" directs which roles must be applied on other hosts before this
-#     role's host play runs. For example, hosts with the "dns_server_*" role must
-#     complete their play before the hosts with "dns_client".
-#   - "galaxy_roles" and "galaxy_collections" represent the Ansible Galaxy roles
-#     and collections that must be installed on the Ansible control node prior
-#     to running the playbook.
-#   - "assets" represent the files under the "assets/" directory that are to be
-#     copied to the Ansible control node prior to running the playbook.
-#   - "host_vars" are the variables (in YAML format) written to the host's 
-#     host_vars file. Sentinels prefixed with __DIAGRAM_ are placeholders which 
-#     will be resolved by the converter at build time, derived from
-#     diagram information.
+# - "fqcn" (the "Fully Qualified Collection Name") is the name that will be used
+#   in the roles section of a host's play in the playbook. This is also the only
+#   required key, all others are optional.
+# - "priority" directs the execution order of the role within a host's play.
+#   Roles with lower priority values run first, and 100 is the default value.
+# - "depends_on" directs which roles must be applied on other hosts before this
+#   role's host play runs. For example, hosts with the "dns_server_primary"-
+#   or "dns_server_secondary" role must complete their play before the hosts
+#   with the "dns_client"-role.
+# - "galaxy_roles" and "galaxy_collections" represent the Ansible Galaxy roles
+#   and collections that must be installed on the Ansible control node prior
+#   to running the playbook.
+# - "assets" represent the files under the "assets/" directory that are to be
+#   copied to the Ansible control node prior to running the playbook.
+# - "host_vars" are the variables written to the host's host_vars file
+#   (in YAML format). Sentinels prefixed with __DIAGRAM_ are placeholders
+#   which will be resolved by the converter at build time, derived from
+#   diagram information.
 #
 # Format:
 # roles:
@@ -35,7 +36,7 @@
 #       - <ansible_galaxy_collection_name>
 #     host_vars:
 #       <host_vars_in_yaml_format>
-#   ...   
+#   ...
 ---
 roles:
   # region dhcp_server
