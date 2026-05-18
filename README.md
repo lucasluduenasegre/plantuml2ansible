@@ -4,7 +4,7 @@
 
 PlantUML2Ansible is a proof-of-concept for converting network and deployment diagrams (created using PlantUML) to IaC and configuration management supported environments (provided by Vagrant & Ansible, respectively).
 
-This solution is developed as part of a bachelor's thesis within the context of the '*Applied IT*'-programme at HOGENT (and its relevant course modules such as *[Cybersecurity Advanced](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193610&b=5&c=1)* and *[Infrastructure Automation](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193608&b=5&c=1)*.
+This solution is developed as part of a bachelor's thesis within the context of the '_Applied IT_'-programme at HOGENT (and its relevant course modules such as _[Cybersecurity Advanced](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193610&b=5&c=1)_ and _[Infrastructure Automation](https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193608&b=5&c=1)_.
 
 Further clarification on the motivation, research, and code behind this project can be found in [the thesis's repository](https://github.com/lucasluduenasegre/latex-hogent-bachproef-nl-25-26-luduenasegrelucas).
 
@@ -16,7 +16,7 @@ Since this project is a proof-of-concept, there are a number of noteworthy limit
 2. Multiple networks **are** supported for **Vagrant-only output** (**IaC-only mode**), with a maximum of defined **3** IP addresses per host. Routing is **not** included.
 3. An Ansible `control` node is automatically added in full mode.
 4. Only **IPv4** is supported.
-5. Only ***AlmaLinux* 9** is supported as the guest OS (with '`bento/almalinux-9`' as the Vagrant base box).
+5. Only **_AlmaLinux_ 9** is supported as the guest OS (with '`bento/almalinux-9`' as the Vagrant base box).
 6. The converter assumes the provided PlantUML-based diagrams to be syntactically valid.
 
 ## Prerequisites & installation
@@ -165,8 +165,8 @@ network external.lan {
 
 The next two sections will go into much further detail about the usage of this script, as well as elaborating on some of its limitations.
 
-A limitation for both use cases is that the virtual machines in the produced environment will **only** support ***AlmaLinux* 9** as their guest OS (with '`bento/almalinux-9`' as the Vagrant base box).
-This is because the current role configuration is reliant on a number of existing Ansible roles (see the "Acknowledgements & Credits"-section) which are used in the '*Applied IT*'-programme, and these are only functional on *AlmaLinux* 9 (also as opposed to the more recent AlmaLinux 10).
+A limitation for both use cases is that the virtual machines in the produced environment will **only** support **_AlmaLinux_ 9** as their guest OS (with '`bento/almalinux-9`' as the Vagrant base box).
+This is because the current role configuration is reliant on a number of existing Ansible roles (see the "Acknowledgements & Credits"-section) which are used in the '_Applied IT_'-programme, and these are only functional on _AlmaLinux_ 9 (also as opposed to the more recent AlmaLinux 10).
 
 For both use cases, one can include the `--verbose`/`-v` flag for debugging purposes and specify the output directory with the `--output`/`-o` flag (`output/<diagram_name>` by default).
 
@@ -461,80 +461,63 @@ The title of each section will represent the **role identifier**, which is what 
 
 The **FQCN** (Fully Qualified Collection Name) is the name that will be used in the `roles` section of a host's play in the **Ansible playbook**.
 
+| Role identifier      | FQCN                                  |
+| -------------------- | ------------------------------------- |
+| dhcp_server          | bertvv.dhcp                           |
+| dns_server_primary   | dns_server                            |
+| dns_server_secondary | dns_server                            |
+| dns_client           | dns_client                            |
+| monitoring_server    | monitoring_server                     |
+| apache_exporter      | prometheus.prometheus.apache_exporter |
+| bind_exporter        | prometheus.prometheus.bind_exporter   |
+| mysqld_exporter      | prometheus.prometheus.mysqld_exporter |
+| node_exporter        | prometheus.prometheus.node_exporter   |
+| web_server           | web_server                            |
+
 ### `dhcp_server`
 
-**FQCN**: `bertvv.dhcp`
-
-Configures an **ISC DHCP server** using the `bertvv.dhcp` Ansible Galaxy role. The subnet, broadcast address, netmask, domain name, and DNS server IPs are all derived automatically from the network diagram at build time. The range for **dynamic IP addresses** is always from the **midpoint of the subnet** to the **network broadcast address - 3**, e.g. `172.16.128.0`-`172.16.255.252` for the network `172.16.0.0/16` (`172.16.255.253` is reserved for the Ansible `control` node).
+This role configures an **ISC DHCP server** using the `bertvv.dhcp` Ansible Galaxy role. The subnet, broadcast address, netmask, domain name, and DNS server IPs are all derived automatically from the network diagram at build time. The range for **dynamic IP addresses** is always from the **midpoint of the subnet** to the **network broadcast address - 3**, e.g. `172.16.128.0`-`172.16.255.252` for the network `172.16.0.0/16` (`172.16.255.253` is reserved for the Ansible `control` node).
 Lastly, the default and maximum lease times are set to 4 hours (14400 seconds).
 
-This role **depends on** `dns_server_primary` and/or `dns_server_secondary` being provisioned first, as their IP addresses are used to populate `dhcp_global_domain_name_servers`. Port `67/udp` is opened in the firewall.
+This role **depends on** `dns_server_primary` and/or `dns_server_secondary` being provisioned first, as their IP addresses are used to populate `dhcp_global_domain_name_servers`.
 
-### `dns_server_primary` (BIND9)
+Port `67/udp` is opened in the firewall.
 
-**FQCN**: `dns_server`
+### `dns_server_primary` & `dns_server_secondary` (BIND9)
 
-Configures a **primary authoritative DNS server** using the `bertvv.bind` Ansible Galaxy role, wrapped in the custom `dns_server` role. The custom role additionally opens TCP port 8053 in SELinux (`dns_port_t`) to support the `bind_exporter`.
+This role configures a **primary or secondary authoritative BIND9 DNS server** using the `bertvv.bind` Ansible Galaxy role. They both use the same underlying `dns_server`-role with differing `host_vars`. These roles additionally open TCP port `8053` in SELinux (`dns_port_t`) to support the `bind_exporter`-role.
 
-The zone definitions (forward and reverse) are generated automatically from the network diagram via the `__DIAGRAM_BIND_ZONES_PRIMARY__` sentinel. DNSSEC is disabled. Recursion is enabled, and queries are forwarded to `10.0.2.3` (VirtualBox's internal DNS) and `1.1.1.1` as upstream resolvers. Zone transfers are restricted to the IPs of any secondary DNS servers defined in the diagram. Ports `53/tcp` and `53/udp` are opened in the firewall.
+The zone definitions (forward and reverse) are generated automatically from the network diagram via the `__DIAGRAM_BIND_ZONES_PRIMARY__`- and `__DIAGRAM_BIND_ZONES_SECONDARY__`-sentinel. DNSSEC is disabled. Recursion is enabled, and queries are forwarded to `10.0.2.3` (VirtualBox's internal DNS) and `1.1.1.1` as upstream resolvers. Zone transfers are restricted to the IPs of any secondary DNS servers defined in the diagram.
 
-### `dns_server_secondary` (BIND9)
-
-**FQCN**: `dns_server` (same as `dns_server_primary`, as it's virtually the same role with just different host_vars)
-
-Configures a **secondary DNS server** using the same custom `dns_server` role as the primary. The zone definitions are populated via `__DIAGRAM_BIND_ZONES_SECONDARY__`, which generates secondary zone entries that transfer from the primary. The same upstream forwarders (`10.0.2.3`, `1.1.1.1`) are used.
+Ports `53/tcp` and `53/udp` are opened in the firewall.
 
 ### `dns_client`
 
-A lightweight custom role that turns the host into a **DNS client** by altering its `/etc/resolv.conf` file. It removes any pre-existing `nameserver` entries, sets the search domain to the network's domain name (based on the `network_name`), and adds the DNS server IPs derived from the diagram (`__DIAGRAM_DNS_SERVER_IPS__`). It runs after both `dns_server_primary` and `dns_server_secondary` have been provisioned.
+This is a lightweight custom role that turns the host into a **DNS client** by altering its `/etc/resolv.conf` file. It removes any pre-existing `nameserver` entries, sets the search domain to the network's domain name (based on the `network_name`), and adds the DNS server IPs derived from the diagram (`__DIAGRAM_DNS_SERVER_IPS__`). It runs after both `dns_server_primary` and `dns_server_secondary` have been provisioned.
 
 ### `monitoring_server` (Grafana + Prometheus)
 
-Deploys a **monitoring stack** consisting of **Prometheus** and **Grafana**, using the `prometheus.prometheus` and `grafana.grafana` Ansible Galaxy collections, respectively. The custom `monitoring_server` role applies both upstream roles in sequence, then copies the Grafana dashboard provisioning configuration and dashboard JSON files (based on the **exporter roles** in the diagram) from the Ansible `control` node to the server.
+This role deploys a **monitoring stack** consisting of **Prometheus** and **Grafana**, using the `prometheus.prometheus` and `grafana.grafana` Ansible Galaxy collections, respectively. The custom `monitoring_server` role applies both upstream roles in sequence, then copies the Grafana dashboard provisioning configuration and dashboard JSON files (based on the relevant **exporter roles** in the diagram) from the Ansible `control` node to the server.
 
-Grafana is pre-configured with Prometheus as a datasource (accessible at `http://localhost:9090`) and provisioning is set to synchronised mode, meaning dashboards are automatically loaded on startup. The **admin credentials** default to `admin` / `root`. **Prometheus scrape targets** are generated automatically from connections in the deployment diagram via `__DIAGRAM_SCRAPE_CONFIGS__`, which resolves to a list of jobs based on the exporter roles assigned to each host and their configured ports. Ports `3000/tcp` (Grafana), `53/tcp` and `53/udp` are opened in the firewall.
+Grafana is configured with Prometheus as a datasource (accessible at `http://localhost:9090`) and provisioning is set to "synchronised mode", meaning dashboards are automatically loaded on startup. The **admin credentials** default to `admin` as the username and `root` as the password. **Prometheus scrape targets** are generated automatically from connections in the deployment diagram via `__DIAGRAM_SCRAPE_CONFIGS__`, which resolves to a list of jobs based on the exporter roles assigned to each host (and their corresponding ports).
+
+Ports `3000/tcp` (Grafana), `53/tcp` and `53/udp` are opened in the firewall.
 
 ### Prometheus exporters
 
 These exporters belong to the `prometheus.prometheus` Ansible Galaxy collection and are lightweight agents installed alongside their respective services. They expose metrics on a dedicated port, which the monitoring server's Prometheus instance scrapes. Each exporter role also defines a pre-built **Grafana dashboard** JSON file that is automatically copied to the monitoring server.
 
-#### `apache_exporter`
+- **`apache_exporter`** exposes **Apache HTTP server** metrics on **port `9117/tcp`** by scraping the `mod_status` endpoint at `http://localhost/server-status/?auto`. This role also sets `httpd_status_enable: true` to ensure the status module is active.
 
-**FQCN:** `prometheus.prometheus.apache_exporter`
+- **`bind_exporter`** exposes **BIND9 DNS server metrics** on **port `9119/tcp`**. This role also sets `bertvv.bind`'s `bind_statistics_channels` variable to `true` so that BIND exposes its internal statistics for the exporter to read.
 
-Exposes **Apache HTTP server** metrics on **port `9117/tcp`** by scraping the `mod_status` endpoint at `http://localhost/server-status/?auto`. Also sets `httpd_status_enable: true` to ensure the status module is active.
+- **`mysqld_exporter`** exposes **MariaDB/MySQL metrics** on **port `9104/tcp`** via a Unix socket (`/var/lib/mysql/mysql.sock`). This role will also install `python3-PyMySQL` and enable various InnoDB/processlist-collectors.
 
-#### `bind_exporter`
-
-**FQCN:** `prometheus.prometheus.bind_exporter`
-
-Exposes **BIND9 DNS server metrics** on **port `9119/tcp`**. Sets `bertvv.bind`'s `bind_statistics_channels` variable to `true` so that BIND exposes its internal statistics for the exporter to read.
-
-#### `mysqld_exporter`
-
-**FQCN:** `prometheus.prometheus.mysqld_exporter`
-
-Exposes **MariaDB/MySQL metrics** on **port `9104/tcp`** via a Unix socket (`/var/lib/mysql/mysql.sock`). Installs `python3-PyMySQL`. The following collectors are enabled:
-
-- `info_schema.processlist`
-- `info_schema.innodb_metrics`
-- `info_schema.tablestats`
-- `info_schema.tables`
-- `info_schema.userstats`
-- `engine_innodb_status`
-- `slave_status`
-
-The `web_server` role automatically creates a dedicated `exporter` database user with the required `PROCESS`, `REPLICATION CLIENT`, and `SELECT` privileges.
-
-#### `node_exporter`
-
-**FQCN:** `prometheus.prometheus.node_exporter`
-
-Exposes **general system-level metrics** (CPU, memory, disk, network, etc.) on **port `9100/tcp`** for every host it is assigned to. This is typically the most broadly applied exporter role in any environment.
+- **`node_exporter`** exposes **general system-level metrics** (CPU, memory, disk, network, etc.) on **port `9100/tcp`** for every host it is assigned to. This is typically the most broadly applied exporter role in any environment.
 
 ### `web_server` (Apache + MariaDB)
 
-Configures an **Apache HTTP server** (optionally with **HTTPS**) and a **MariaDB** database using the `bertvv.httpd` Galaxy role, wrapped in the custom `web_server` role. The custom role additionally handles database provisioning and user creation via the `community.mysql` collection.
+This role configures an **Apache HTTP server** (optionally with **HTTPS**) and a **MariaDB** database using the `bertvv.httpd` Galaxy role, wrapped in the custom `web_server` role. The custom role additionally handles database provisioning and user creation via the `community.mysql` collection.
 
 On first run (detected by whether the `db.sql` copy task registers a change), the role:
 
