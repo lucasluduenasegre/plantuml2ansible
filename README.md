@@ -22,6 +22,7 @@ Since this project is a proof-of-concept, there are a number of noteworthy limit
 ## Prerequisites & installation
 
 - Git
+- OpenSSL (optional, for creating a self-signed certificates for the webserver)
 - Python (tested on 3.11.2)
   - `pip` dependencies (see `requirements.txt`):
     - `jinja2`
@@ -517,25 +518,14 @@ These exporters belong to the `prometheus.prometheus` Ansible Galaxy collection 
 
 ### `web_server` (Apache + MariaDB)
 
-This role configures an **Apache HTTP server** (optionally with **HTTPS**) and a **MariaDB** database using the `bertvv.httpd` Galaxy role, wrapped in the custom `web_server` role. The custom role additionally handles database provisioning and user creation via the `community.mysql` collection.
+This role configures an **Apache HTTP server** (optionally with **HTTPS**) and a **MariaDB** database using the `bertvv.httpd` Galaxy role, wrapped in the custom `web_server` role. 
 
-On first run (detected by whether the `db.sql` copy task registers a change), the role:
+Both a database and a PHP page are created based on `ansible/files/db.sql` and `ansible/files/test.php` respectively (these files are copied by the converter to the Ansible `control` node). An application database user `appuser` is created for the `appdb` database with full privileges, as well as a read-only `exporter` user for the `mysqld_exporter` role.
 
-1. Copies `db.sql` to `/tmp/` on the server and imports it into the configured database.
-2. Creates an application database user (`appuser` on `appdb` by default) with full privileges.
-3. Creates a dedicated `exporter` user with read-only privileges for `mysqld_exporter`.
-
-A PHP test script (`test.php`) is deployed to `/var/www/html/index.php`.
-
-**HTTPS** via **TLS** is configured using the `ca.crt` and `ca.key` files copied from `ansible/files/` (if they're available). These files have to be created **manually**; the **key**, for example, like this:
+**HTTPS** via **TLS** can be configured using a self-signed certificate (`ansible/files/ca.crt`) signed by a private key (`ansible/files/ca.key`) (if they're both available). These files have to be created **manually**, which can be done in the following way using `openssl`:
 
 ```
 openssl genpkey -algorithm rsa -out ca.key
-```
-
-And the **certificate** like so:
-
-```
 openssl req -new -x509 -key ca.key -out ca.crt -days 365
 ```
 
