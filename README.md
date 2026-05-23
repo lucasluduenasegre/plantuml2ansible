@@ -91,7 +91,7 @@ network company.lan {
 @endnwdiag
 ```
 
-![](https://www.plantuml.com/plantuml/svg/RSx12i8m383XUvuYz05gLqHFmjv3P4GJHUooqLIhYE_kn6lFtt_uUokKYrQ-qWNbIUESP3ZVKnf47m0gfKxvXgTfd4bVFf7Y6n29EOiPxj1rs-ZZnWSVLd7jOC4gHzotYYwum-AirlRuymz0Byh_fIy0)
+![](https://www.plantuml.com/plantuml/png/RSx12i8m383XUvuYz05gLqHFmjv3P4GJHUooqLIhYE_kn6lFtt_uUokKYrQ-qWNbIUESP3ZVKnf47m0gfKxvXgTfd4bVFf7Y6n29EOiPxj1rs-ZZnWSVLd7jOC4gHzotYYwum-AirlRuymz0Byh_fIy0)
 
 **`uml_example_full_env.puml`**:
 
