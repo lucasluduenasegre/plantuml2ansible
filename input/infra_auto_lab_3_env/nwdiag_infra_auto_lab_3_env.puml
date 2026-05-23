@@ -1,4 +1,4 @@
-@startnwdiag infra_auto_env
+@startnwdiag infra_auto_lab_3_env
 
 network infra.lan {
     address = "172.16.0.0/16"

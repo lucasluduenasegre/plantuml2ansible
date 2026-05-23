@@ -204,9 +204,9 @@ def parse_nwdiag(puml_text):
     start_re = re.compile(r'@startnwdiag(?:\s+"?([\w-]+)"?)?')
     network_re = re.compile(r'network\s+"?([\w.-]+)"?\s*\{')
     net_address_re = re.compile(r'address\s*=\s*"?([\d.]+/\d+)"?')
-    host_re = re.compile(r"([\w-]+)\s*\[([^\]]+)\]")
+    host_re = re.compile(r'([\w-]+)\s*\[([^\]]+)\]')
     description_re = re.compile(r'description\s*=\s*"?([\w-]+)"?')
-    managed_re = re.compile(r'managed\s*=\s*"?(true|false)"?', re.I)
+    managed_re = re.compile(r'managed\s*=\s*"?(true|false)"?', re.I) # Case insensitive
     host_address_re = re.compile(r'address\s*=\s*"?([\d.]+)"?')
     cpus_re = re.compile(r'cpus\s*=\s*"?(\d+)"?')
     memory_re = re.compile(r'memory\s*=\s*"?(\d+)"?')
@@ -341,16 +341,16 @@ def parse_uml(puml_text):
 
     # Compile all patterns once.
     comment_re = re.compile(r"^\s*(?:'|\/\/).*")
-    start_re = re.compile(r"@startuml(?:\s+(\S+))?")
+    start_re = re.compile(r'@startuml(?:\s+(\S+))?')
     node_re = re.compile(
-        r"node\s+(\w+)(?:\s+<<\w+>>)?(?:\s+as\s+\"([^\"]+)\")?\s*(\{)?"
+        r'node\s+(\w+)(?:\s+<<\w+>>)?(?:\s+as\s+"([^"]+)")?\s*(\{)?'
     )
-    component_re = re.compile(r"component\s+(\w+)(?:\s+as\s+\"([^\"]+)\")?")
-    close_re = re.compile(r"^\}$")
+    component_re = re.compile(r'component\s+(\w+)(?:\s+as\s+"([^"]+)")?')
+    close_re = re.compile(r'^\}$')
     # Matches role-to-role connections of the form: node.role --> node.role
     # The arrow may carry a label, colour modifier, or thickness marker.
     role_conn_re = re.compile(
-        r"(\w+)\.(\w+)\s+-(?:[\w]|\[?[^\]]*\]|-)*>\s+(\w+)\.(\w+)"
+        r'(\w+)\.(\w+)\s+-(?:[\w]|\[?[^\]]*\]|-)*>\s+(\w+)\.(\w+)'
     )
 
     connections = []

@@ -1,0 +1,27 @@
+@startnwdiag infra_auto_lab_2_env
+
+network infra.lan {
+    address = "172.16.0.0/16"
+
+    r001 [address = "172.16.255.254", managed = false, shape = node, color = LightSalmon]
+    your_laptop [description = "your-laptop", address = "172.16.0.1", managed = false, shape = node, color = LightSalmon]
+    srv001 [address = "172.16.128.1", shape = node]
+    srv002 [address = "172.16.128.2", shape = node]
+    srv003 [address = "172.16.128.3", shape = node]
+    srv100 [address = "172.16.128.100", shape = node]
+    ws0001 [address = "dhcp", managed = false, shape = node, color = LightSalmon]
+}
+
+network virtualbox_nat {
+    address = "10.0.2.0/24"
+    color = LightSalmon
+
+    r001 [address = "10.0.2.15", managed = false, shape = node, color = LightSalmon]
+    virtualbox_nat_gateway [address = "10.0.2.2", managed = false, shape = node, color = LightSalmon]
+    virtualbox_nat_dns [address = "10.0.2.3", managed = false, shape = node, color = LightSalmon]
+}
+
+real_internet [shape = cloud]
+virtualbox_nat_gateway -- real_internet
+
+@endnwdiag

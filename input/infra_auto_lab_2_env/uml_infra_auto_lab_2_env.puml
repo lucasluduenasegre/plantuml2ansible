@@ -1,0 +1,37 @@
+@startuml infra_auto_lab_2_env
+set separator .
+left to right direction
+
+node srv001 {
+    component dns_client
+    component dns_server_primary
+}
+
+node srv002 {
+    component dns_client
+    component dns_server_secondary
+}
+
+node srv003 {
+    component dhcp_server
+    component dns_client
+}
+
+node srv100 {
+    component dns_client
+    component web_server
+}
+
+srv001.dns_client -[#teal]-> srv001.dns_server_primary
+srv001.dns_client -[#teal]-> srv002.dns_server_secondary
+
+srv002.dns_client -[#teal]-> srv001.dns_server_primary
+srv002.dns_client -[#teal]-> srv002.dns_server_secondary
+
+srv003.dns_client -[#teal]-> srv001.dns_server_primary
+srv003.dns_client -[#teal]-> srv002.dns_server_secondary
+
+srv100.dns_client -[#teal]-> srv001.dns_server_primary
+srv100.dns_client -[#teal]-> srv002.dns_server_secondary
+
+@enduml
