@@ -36,6 +36,7 @@ node web as "web" {
     Format:
     component <role_identifier>
     '/
+    component apache_exporter
     component dns_client
     component mysqld_exporter
     component node_exporter
@@ -70,6 +71,7 @@ mon.dns_client -[#teal]-> dns.dns_server_primary
 mon.monitoring_server -[#coral]-> dns.bind_exporter
 mon.monitoring_server -[#coral]-> dns.node_exporter
 mon.monitoring_server -[#coral]-> mon.node_exporter
+mon.monitoring_server -[#coral]-> web.apache_exporter
 mon.monitoring_server -[#coral]-> web.mysqld_exporter
 mon.monitoring_server -[#coral]-> web.node_exporter
 

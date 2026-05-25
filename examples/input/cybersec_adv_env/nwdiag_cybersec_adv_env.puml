@@ -8,7 +8,6 @@ network internal-company-lan {
     database [address = "172.30.0.15", memory = 256, shape = node]
     employee [address = "172.30.0.123", memory = 256, shape = node]
 }
-
 network fake-internet {
     address = "192.168.62.0/24"
 
@@ -17,14 +16,12 @@ network fake-internet {
     your_laptop [description = "your-laptop", address = "dhcp", managed = false, shape = node, color = LightSalmon]
     homerouter [address = "192.168.62.42", memory = 1024, shape = node]
 }
-
 network employee-home-lan {
     address = "172.10.10.0/24"
 
     homerouter [address = "172.10.10.254", shape = node]
     remote_employee [description = "remote-employee", address = "172.10.10.123", memory = 1024, shape = node]
 }
-
 network virtualbox_nat {
     address = "10.0.2.0/24"
     color = LightSalmon
@@ -33,8 +30,6 @@ network virtualbox_nat {
     virtualbox_nat_gateway [address = "10.0.2.2", managed = false, shape = node, color = LightSalmon]
     virtualbox_nat_dns [address = "10.0.2.3", managed = false, shape = node, color = LightSalmon]
 }
-
 real_internet [shape = cloud]
 virtualbox_nat_gateway -- real_internet
-
 @endnwdiag

@@ -518,7 +518,7 @@ These exporters belong to the `prometheus.prometheus` Ansible Galaxy collection 
 
 ### `web_server` (Apache + MariaDB)
 
-This role configures an **Apache HTTP server** (optionally with **HTTPS**) and a **MariaDB** database using the `bertvv.httpd` Galaxy role, wrapped in the custom `web_server` role. 
+This role configures an **Apache HTTP server** (optionally with **HTTPS**) and a **MariaDB** database using the `bertvv.httpd` Galaxy role, wrapped in the custom `web_server` role.
 
 Both a database and a PHP page are created based on `ansible/files/db.sql` and `ansible/files/test.php` respectively (these files are copied by the converter to the Ansible `control` node). An application database user `appuser` is created for the `appdb` database with full privileges, as well as a read-only `exporter` user for the `mysqld_exporter` role.
 
@@ -558,13 +558,13 @@ Copied (verbatim):
   - Predefined (custom) Ansible roles, which correspond to the FQCN of a role entry in `role-config.yml`.
 - **`ansible/files/grafana/dashboards/<grafana_dashboard>.json`** (for each defined exporter role in the deployment diagram)
   - Monitoring dashboards to be provisioned for the Prometheus + Grafana monitoring stack (deployed using the role `monitoring_server`).
-- **`ansible/files/ca.crt`** (when `role_web_server` is defined in the deployment diagram)
+- **`ansible/files/ca.crt`** (when `web_server` is defined in the deployment diagram)
   - Custom, self-signed SSL certificate.
-- **`ansible/files/ca.key`** (when `role_web_server` is defined in the deployment diagram)
+- **`ansible/files/ca.key`** (when `web_server` is defined in the deployment diagram)
   - SSL private key, used to generate and confirm the self-signed certificate.
-- **`ansible/files/db.sql`** (when `role_web_server` is defined in the deployment diagram)
+- **`ansible/files/db.sql`** (when `web_server` is defined in the deployment diagram)
   - Very small, simple, and local MySQL database.
-- **`ansible/files/test.php`** (when `role_web_server` is defined in the deployment diagram)
+- **`ansible/files/test.php`** (when `web_server` is defined in the deployment diagram)
   - Simple PHP page that queries the aforementioned database.
 
 Generated (based on diagrams):
@@ -582,25 +582,33 @@ Generated (based on diagrams):
 
 ## Acknowledgements & Credits
 
+### HOGENT course modules
+
+- HOGENT. (2025a). _Cybersecurity Advanced_. Hogent.be. https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193610&b=5&c=1
+  - One of the three test cases for the converter was based on the lab environment used in this course module.
+
+- HOGENT. (2025b). _Infrastructure Automation_. Hogent.be. https://bamaflexweb.hogent.be/BMFUIDetailxOLOD.aspx?a=193608&b=5&c=1
+  - Two of the three test cases for the converter were based on the labs 2 & 3 from this course module.
+
 ### Ansible Galaxy roles & collections
 
 - Bert Van Vreckem. (2015a). _bertvv/ansible-role-bind: Sets up ISC BIND as an authoritative DNS server on several Linux distros & FreeBSD_. GitHub. https://github.com/bertvv/ansible-role-bind
-  - This was used for the custom role `role_dns_server`, which deploys a primary (and secondary) nameserver.
+  - This was used for the custom role `dns_server`, which deploys a primary (and secondary) nameserver.
 
 - Bert Van Vreckem. (2015b). _bertvv/ansible-role-dhcp: Ansible role for setting up ISC DHCPD on RHEL/CentOS 7_. GitHub. https://github.com/bertvv/ansible-role-dhcp
-  - This was used for the custom role `role_dhcp_server`, which deploys a DHCP server.
+  - This was used for the custom role `dhcp_server`, which deploys a DHCP server.
 
 - Bert Van Vreckem. (2015c). _bertvv/ansible-role-httpd: A simple Ansible role for installing and configuring the Apache web server for RHEL/CentOS 7 and Fedora 28_. GitHub. https://github.com/bertvv/ansible-role-httpd
-  - This was used for the custom role `role_web_server`, which deploys a very simple Apache web server (including a small, built-in MariaDB database).
+  - This was used for the custom role `web_server`, which deploys a very simple Apache web server (including a small, built-in MariaDB database).
 
 - Bert Van Vreckem. (2016). _bertvv/ansible-role-rh-base: Ansible role for basic setup of a server with a RedHat-based Linux distribution (CentOS, Fedora, RHEL, ...)_. GitHub. https://github.com/bertvv/ansible-role-rh-base
   - This was used for executing various basic configuration tasks (such as setting up the firewall and installing packages) on every VM (currently all running AlmaLinux 9).
 
 - Grafana Labs. (2026). _grafana/grafana-ansible-collection: grafana.grafana Ansible collection provides modules and roles for managing various resources on Grafana Cloud and roles to manage and deploy Grafana Agent and Grafana_. GitHub. https://github.com/grafana/grafana-ansible-collection
-  - This was used for the custom role `role_monitoring_server`, which deploys a Prometheus + Grafana monitoring stack.
+  - This was used for the custom role `monitoring_server`, which deploys a Prometheus + Grafana monitoring stack.
 
 - Prometheus Monitoring Community. (2026). _prometheus-community/ansible: Ansible Collection for Prometheus. GitHub_. https://github.com/prometheus-community/ansible
-  - This was used for the custom role `role_monitoring_server` as well as the various exporters (node, MySQL, BIND).
+  - This was used for the custom role `monitoring_server` as well as the various exporters (node, MySQL, BIND).
 
 ### Grafana dashboards
 
