@@ -50,8 +50,8 @@ network test.lan {
       - https://plantuml.com/deployment-diagram
   '/
   unmanaged_router [address = "172.26.255.254", managed = false, shape = "node", color = LightSalmon]
-  web [description = "web", address = "172.26.0.10", shape = "node"]
-  dns [description = "dns", address = "172.26.0.20", shape = "node"]
+  web [address = "172.26.0.10", shape = "node"]
+  dns [address = "172.26.0.20", shape = "node"]
   mon [description = "monitoring", address = "172.26.0.30", cpus = 2, memory = 2048, shape = "node"]
 }
 

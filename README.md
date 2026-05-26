@@ -248,7 +248,7 @@ network test.lan {
 
   /'
   Host definition
-
+  
   Format:
   <host_identifier> [address = <ipv4_address>, description = <description>, cpus = <amt_cores>, memory = <amt_gb_ram>, managed = <true|false>, shape = <shape>, color = <color_value>]
 
@@ -268,8 +268,8 @@ network test.lan {
       - https://plantuml.com/deployment-diagram
   '/
   unmanaged_router [address = "172.26.255.254", managed = false, shape = "node", color = LightSalmon]
-  web [description = "web", address = "172.26.0.10", shape = "node"]
-  dns [description = "dns", address = "172.26.0.20", shape = "node"]
+  web [address = "172.26.0.10", shape = "node"]
+  dns [address = "172.26.0.20", shape = "node"]
   mon [description = "monitoring", address = "172.26.0.30", cpus = 2, memory = 2048, shape = "node"]
 }
 
@@ -292,7 +292,7 @@ network unmanaged.lan {
 
 The PlantUML-code above will generate the following image:
 
-![](https://www.plantuml.com/plantuml/svg/fLPHRzj637xNho3qqWHmvCHBiopBWcuOXWt8kW9jjuUWC4uwshhbTAVTKNQDhVzzf6HPZgrinGOaWC8Zluz7VkJbLIGLoAsrKKiWZ3H7jqgcBvBlsH1K1KvL21eNnXaotYN93pvKYcxWIUIjxjpdudwN9AyzuGsO1JWFUX_9H8Wr5cPXK4-0IeI5iTWVDH4rg0WA5ihQN1MFiF0XuMFZbgstRwXkY3435kJ39eDtfOaTTYnzOpLmTaNPEckihTzKwAXFuaNCaXVJH2xu6cdjm-FOtHAtFRlTVdJNWZyJ0ALrm1ZXc-5mQxgRtjQ1mJxEBRebbNViNNZhW_Ys7_ELiWsN9ykov5DNf7YJdC4lpcxWfpUhoxOyJLtxGAXXNQBhqfFRzpbjsJ1c79cskAd4AGU-bcieEu6LYOsoe8Y2oHj2e58Hh8sra2C4T1e3wWGWty0Rgnoz__aUs17Cqda-4RjKiF1kXO4mPF0MiUkNjzQlEIEEjiQr7M94fTaajSTWcDaxYBInOaEBqeB8z5Hs5U5R0m2SGKbKnvlfj9OScifcXQ-chOkqgR-ow39ZZuC6f1TVphBPLNQUdKylhjA43xcl03_wIFjj1U2VlhK0joMVpur6HoB3S0SFUqqrzUforz49myGYcBQkShht9nyMTTF6g8hcXGye0HLMBClUkipdh3enAwUMgCLEeS6_MDyHsHvBLQDOvKCCeuhv87VRoaNAzaucGKJ3i5gH40wjDX7IxGNI2IXhmLE98O8Ak9D89WtuBE7n-RxcXFwxZPognf8eucbLzX8vMPUcA0Mw5zo-t4ubWrwIkyaNFAPYQA6MJideVJtIDDCw2yYmBCpY81dPAKwmkyJVIngnRHKO9_4xYcqcW-Gra8ToKvVe8kkWGI0lR0nYFdPUJaYwceZeUeaBR3eql6rrEjIbPtfsrbeMzeH8uZbMl8xptZnYlm8caBOIwdO1r4r0kpdU0woNZdyW5xf_7VRF6dL1EXZtDgS89xcI1ditifF1vxzZGV5KjFqFQs68FDj6iZzl2O36RQiz3xuX3F1ml2HcBr_oxoNNwQ0pmmocpcjCXn6yDykItYfRUVU1MTQOmyFJVP2oZGF6LjB5UNg8B23QnICGjZq3CXi7uOIEGDXco0VkmZDONp1Mlx5cUtjgTdvvVKpogNiZvHa_44A_b4ta8BzsCYOQcJvIKDJ9flOncjnOGnlmYzqgIIgPwzfY3n8vLHOAMWig3criXp9cy9lieIKwP62XpZsLyAkqtf4eEVdMCOqLvMgS7EJPOi2923usUSG_6dHaD-Asup_jPi5vWXoJmgzmzEtRUuk694SVfAzcsSNLTLlmwUmoJM1CJCcuPCTW_gTa1vQssgH4BSzHNSok_okLoEKLEjtzDvZy3G00)
+![](https://www.plantuml.com/plantuml/svg/fLPXRzis4FskNt7GboI08oTUccLP5dJ3C6n0rXLektq82eCIpnONcjJ8arrZwt_V7ML5ZgDknGQqY78yldUyztZCoqWgaDjeevP066cERfrDZxBlEH3K2fnQ8MXS66V8U9TbF_YmKdGDJtRUw2vzBkctMVRA4rw3MO3peFUHJ8JOO6KM1lK4g4PO68lzKXjHWugWOA6iBLNr00iVCbusRfcoVKjDIumPi28VjWMyhKtii6FjMwk1gwlgbAoniNwxGaTz4KUno8wccHpm5TB6XuUnisLkjtQp--YE1Nzc04hhW372DyFYBdGxlMa2WtsOMtHBgcyvk_BM1ybD7_EriYstfoYAx6FNf7YTdS8lpcxXfzVhYzIUjcby8DImgT5rvSdfTsnz0HWBtfadt5psAGU-aMCeEu6rYQsoe8Y2ALj2e5eHR8orK284T1e3wWoWtC9hgnoz-_aEE17CqdbUaRXqiF9kZLnCAE0DOgUNjzPlk2BUROrB2Z6YqXoItcCmpEmTHDfQYQ55aI0oFTLTH_ZK002dK1CryNewRQI6TcMBog-cAKLaweyilYmuuq20_FpBMJ6xBCwAi-dvPPxn8kiAyAEFj2yh0F_hfGMugNbzRZGw4Xk6MxZV4zKqwuj7HISC4wjWKbzbTUzNNgoQDkrHAvfNFg1iME6ARTb7b-MSNITXvTGIjSGfjFWN-piYnsEj6fIeV71Wt37lvMmxkqZRtifD4DCmh5OaX8FK9aA-Eq0-0MKjUDOjH5017orIY02VPJnUt_USq7-tbLNLMX97FEtANY77czfKjK3tXjktsubKq5kol_a9ZwaOMgX5ARbwNu-8PbAoW0p3mYmEYf6PuWIxA_oTb16JL61S8kifTfKCbjT07kfjmxs8x8CMWRomCOZvq6Kv8Ubw8gRhBIwm-I1uaZeV-j8pVVAk9HREX4YSETgyZlFEF60_0YQG9mjrim2QDg3TFfy3x9UEVo0Nkd-zx9zrrGNfuBgdcY8Sbqe4zcva9eClVyUAuebu-n_6mh3pTBUJytbA04kyw_Oy-9QhWlldGsBsuWN_l-0-7IWptC7SUOtvS0NlpBAcDygkl7lFB1iinu3FYlEp_114yhMBu_cpyNocWVkdyoRdc24VkBUyPGph2yRgvz1iR_hCpYwkdfDyx5u-UPmFvEr7hOcyoM-Sc5yZqqSAYZepD3v6KnfhQ0j-yJWWifNSriPY3nAvL9OVhUMVWpZfgiK2VfFfiaI732pKfQSQVXL17Oa_isyTqrZneyR9GPq90ux5nh4j8_xHeYExJMaz_qddSES9IimglyRH5stlXHcA77rclfeLvvTNgU7JsKMUmPX5id4ZZi7yJoCEBAdRfCGjdw8wdrtzPogsoqjqkliRxsy0)
 
 ### Deployment diagram (`@startuml`)
 
@@ -332,20 +332,21 @@ Notes:
 Format:
 node <host_identifier> as <description>
 '/
-node web as "web" {
+node web {
     /'
     Role definition
 
     Format:
     component <role_identifier>
     '/
+    component apache_exporter
     component dns_client
     component mysqld_exporter
     component node_exporter
     component web_server
 }
 
-node dns as "dns" {
+node dns {
     component bind_exporter
     component dns_client
     component dns_server_primary
@@ -373,6 +374,7 @@ mon.dns_client -[#teal]-> dns.dns_server_primary
 mon.monitoring_server -[#coral]-> dns.bind_exporter
 mon.monitoring_server -[#coral]-> dns.node_exporter
 mon.monitoring_server -[#coral]-> mon.node_exporter
+mon.monitoring_server -[#coral]-> web.apache_exporter
 mon.monitoring_server -[#coral]-> web.mysqld_exporter
 mon.monitoring_server -[#coral]-> web.node_exporter
 
@@ -383,7 +385,7 @@ web.dns_client -[#teal]-> dns.dns_server_primary
 
 This code will render the following image:
 
-![](https://www.plantuml.com/plantuml/svg/bLHDZzis4BtpLmpIWrjWBTytYqLQ56qERH44tLDH6BGuiWPBSRISaHsXw7-lXgwjA4Q2jI-KEH_p7jyZtudwh4CNGL5qY-dWDYltC_bzzXqato44R2YH4YVdVk7SURs7kUmXd7Atbllet1-iU0_KG688dxSX0UcnfeOmt86s20r5F8S6mG1Um4FZOzpv-XaQpcuAKzgNR1wq7nG2PQoLyrZ1dot9gRUqFCG04xIwBSa9zSZv-OnW9PLRRPnH-uWl0sKC42dXMtWPV3H80ZLtFITCMbeA74bBByhG-spxBOi21Kng5VdEzHaFcDGG5XWrnqX2dCJ0G-Q80jfw1T_tw3DmWcw8Idt4qatWUwpsbGj9giG1j_YfvwoOuJ01mDroyuT2Gb11S8BabJDKpgtWmv0nZd0WcTZSmP7JIg7r1mIVHi2cmLg1ax4nBeBPHMmKb27JlZqVgYbiH_IUHHUgcwPoxzRmqsZxVeWwwOvIP-ejun6E52Fiy2AZJSeenZNj2rKxeBVkmJwtyna-0fNaMNLgbgsBEPBrhIO0JobWbfep2b0XT6b-mL1pEc1M3CQl7ViMazn16D3-FoNwTCf8rbwgYwUTdJLS0_Io16GQMAhfOy4tq_e6_d4009jLMJvoN5uRspoFiU_PQmzcai_dbVWqOfaMacphI9ZqYq0toaiC5ujy4JMSNuaP_ArWFao1VrrXP5CAesarHily7QLvpclXMU0qPDjdwdmUlu5m1j9nAa2cbPGpfRtXUUNCkUZCxziZpVAcs5fvRMgOFTBfEiZvFVinPpuAT8Ce-7Zqeq3Fb1IQp1qiBjCTx0Q5sYVpekWOxKRKDUTGNZ9sK7wjQY_tcqsTlRGOEagXsfEsmwuYtdo8FkdJxx-z9wtRbfunowy31Tn4F_AW_ozLgrsS3NpbtUhANR1UFy8hyipazYZDXmphlxvJzF7lgK69N2lhEawtLLZ1bLnMLtEU2vVEUrsDYNnBZMNSMcCFz7p_RgbQJdAsTTj9lyCKXYx-1m00)
+![](https://www.plantuml.com/plantuml/svg/bLJ1ZkCs3BthAuZj8IsGEFVPmM1R5EqUscAnw9wA8b0iEYP65ZqYdQnHzDyhEiruFS6s4ryiY7nFZtoKtedwh4CNGL5qX-dejYlt8_b3zXqato44R2YH4YVdVkBSURs36NOVphaxotrmxZTMl0Dg8364Bsb8G7gigI4CQz0MeQ68bz0W6C0BU6XyZ7jVFqB3sPKmfSEKpOFsWnREZBLo7YlulIKvSqlBGmnGfDNjb9nGJvmVBmfMKhdLrbbf7_5fA1G18YLy2q-3ZoP9eEQkvuH99qg14-d4HHbwdss_PL6WK9Q6o6lNPpnYKbDec48H8mbn4XCFcIDAeV0Alk_HP-04tH2L-eWJcy2tM1qg5v9KYGFky7FFMJ73iGZ0_NBpkwa8GGN18iahPwYSMy678MCSuKXIgbd3YTDAeVL719z6mAR1Me6JLMEr26ONiL5GXao7zj9KSzXQz9v55wwRftBdDl33QFk-b51yHwapzPRn02UA4VRuRAETb55AeZN7IhK6lNNtjjpDFNm0cf9drwbvGMt3aOotAW8-fO1PQYxSGEU2BkJF6cfEHyoAmUfhnxx596i80u9o8Q3Fvunaz58zpxIpNiErG2zBGUQ1fPe_y9U3yfMUsUyZn-LjiSqBkwtd4RktsVZoc2bUc9TfllTrEm_0YsX8igiZbUMBG3VAKmnVWvduhyIiffrWFfR0tsugqqwnCXTfUqhXPbKME7Fl-aoTp-D_29lFxpYP1s_AdvGpfSCRq_EwCsVGfQp_ER9OQJPkb3TcaOrAEbyDkRnjt-VC9u5k40KVJtuKw9cIGfEvWyN5MiD-KAXzihaK7QFTZhhc7APNZHrCNwlQozrsMsSlBOQEKgWEfEsmhuYt7w9F-kdNNzwJrcrBZvZbvu42RgCVUT1_VrMhNPo7-MgEgwkHWytc0LwHPmDl3zJSPDZyyOsYZtyMWYboxQphEDs6CC2LNOQhES_0nUIz4cCctuAnZ5inzbXFj_Lcr7nPRq4jzJdRkisVTvZ2qCL_0000)
 
 ### Role configuration (`role-config.yml`)
 

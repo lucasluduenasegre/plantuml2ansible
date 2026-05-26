@@ -29,7 +29,7 @@ Notes:
 Format:
 node <host_identifier> as <description>
 '/
-node web as "web" {
+node web {
     /'
     Role definition
 
@@ -43,7 +43,7 @@ node web as "web" {
     component web_server
 }
 
-node dns as "dns" {
+node dns {
     component bind_exporter
     component dns_client
     component dns_server_primary

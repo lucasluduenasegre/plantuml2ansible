@@ -55,10 +55,6 @@ log "Installing Ansible requirements from Ansible Galaxy"
 
 sudo --login --non-interactive --user=vagrant -- bash -c "ansible-galaxy install -r /vagrant/ansible/requirements.yml"
 
-# log "Running \"routing.yml\"-playbook"
-
-# sudo --login --non-interactive --user=vagrant -- bash -c "ansible-playbook -i /vagrant/ansible/inventory.yml /vagrant/ansible/routing.yml"
-
 log "Adding Ansible hosts to ~/.ssh/known_hosts"
 
 sudo --login --non-interactive --user=vagrant -- bash << 'EOF'
