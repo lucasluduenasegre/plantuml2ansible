@@ -19,10 +19,6 @@ DEFAULT_BASE_BOX = 'bento/almalinux-9'
 # Directory containing VM provisioning scripts
 PROVISIONING_SCRIPT_DIR = 'scripts/'
 
-# Maximum number of additional network interfaces VirtualBox supports
-# (adapter 1 is always NAT, so 3 remain for other networks)
-MAX_NETWORK_INTERFACES = 3
-
 #
 # No changes needed below this point
 #
@@ -108,11 +104,11 @@ def configure_networks(vm, host)
   if host.key?('networks')
     interfaces = host['networks']
 
-    if interfaces.length > MAX_NETWORK_INTERFACES
+    if interfaces.length > 3
       puts "WARNING: host '#{host['name']}' defines #{interfaces.length} interfaces, " \
-           "but VirtualBox only supports #{MAX_NETWORK_INTERFACES}. " \
-           "Only the first #{MAX_NETWORK_INTERFACES} will be configured."
-      interfaces = interfaces.first(MAX_NETWORK_INTERFACES)
+           "but VirtualBox only supports 3. " \
+           "Only the first 3 will be configured."
+      interfaces = interfaces.first(3)
     end
 
     interfaces.each do |iface|
